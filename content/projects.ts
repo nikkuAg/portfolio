@@ -10,6 +10,11 @@ export type Project = {
   github?: string;
   playable?: boolean;
   cover?: string;
+  // optional per-project accent — overrides the category default for the
+  // card's border / glow / gradient / title / corner ticks. Hex format
+  // (e.g. "#ff5dc8"). Useful when a single project deserves its own
+  // identity inside its category.
+  color?: string;
 };
 
 export const projects: Project[] = [

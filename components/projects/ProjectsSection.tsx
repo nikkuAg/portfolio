@@ -18,7 +18,8 @@ const CATEGORY_LABEL: Record<Project["category"], string> = {
 };
 
 // each category has its own phosphor — used for border, glow, gradient
-// tint, category label, and the centered title on the card face
+// tint, category label, and the centered title on the card face. Any
+// project may override these via its own `color` hex on Project.
 const CATEGORY_TINT: Record<Project["category"], string> = {
   build: "#ff9b3d", // warm amber
   game: "#c8ff3d", // phosphor lime
@@ -31,6 +32,33 @@ const CATEGORY_RGB: Record<Project["category"], string> = {
   game: "200,255,61",
   research: "122,168,255",
 };
+
+// "#ff5dc8" → "255,93,200" — used to interpolate a per-project hex into
+// the same rgba() pattern the category colors use
+function hexToRgb(hex: string): string {
+  const h = hex.replace("#", "");
+  const v = h.length === 3
+    ? h.split("").map((c) => c + c).join("")
+    : h;
+  const m = v.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return "200,255,61"; // safe fallback to lime
+  return [
+    parseInt(m[1], 16),
+    parseInt(m[2], 16),
+    parseInt(m[3], 16),
+  ].join(",");
+}
+
+// project's own `color` wins; otherwise fall back to its category's color
+function resolveTint(project: Project): { tint: string; rgb: string } {
+  if (project.color) {
+    return { tint: project.color, rgb: hexToRgb(project.color) };
+  }
+  return {
+    tint: CATEGORY_TINT[project.category],
+    rgb: CATEGORY_RGB[project.category],
+  };
+}
 
 export function ProjectsSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -221,8 +249,7 @@ function CardFace({
   project: Project;
   index: number;
 }) {
-  const tint = CATEGORY_TINT[project.category];
-  const rgb = CATEGORY_RGB[project.category];
+  const { tint, rgb } = resolveTint(project);
 
   return (
     <div
@@ -333,7 +360,7 @@ function CornerTick({
 }
 
 function ActiveProjectInfo({ project }: { project: Project }) {
-  const tint = CATEGORY_TINT[project.category];
+  const { tint } = resolveTint(project);
   const hasLinks = Boolean(project.href || project.github);
 
   return (

@@ -96,10 +96,22 @@ When the user adds a new role:
   github: "https://github.com/nikkuAg/...", // optional
   playable: true,               // optional — true for games with an inline play link
   cover: "/projects/foo.png",   // optional — preview image in /public
+  color: "#ff5dc8",             // optional — per-project accent hex; overrides
+                                //   the category default (build/game/research)
+                                //   for the deck card border, glow, gradient,
+                                //   title, and corner ticks. Side-panel
+                                //   category label uses it too.
 }
 ```
 
 Order in this file roughly tracks recency or curation, not strict chronology. When adding, ask the user where they want it (default: append).
+
+**Category default colors** (used when `color` is omitted):
+- `build` → `#ff9b3d` (warm amber)
+- `game` → `#c8ff3d` (phosphor lime)
+- `research` → `#7aa8ff` (cool blue)
+
+If the user provides a `color`, validate it's a 3- or 6-digit hex (`#RGB` or `#RRGGBB`) before writing. Reject CSS names / rgb() — only hex.
 
 ### Skill (`content/about.ts` → `skills[]`)
 
