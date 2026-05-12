@@ -25,10 +25,10 @@ export function Footer() {
 
   return (
     <footer className="relative w-full border-t border-border overflow-hidden">
-      <div className="overflow-hidden py-10 md:py-14 border-b border-border">
-        <div className="flex whitespace-nowrap animate-[marquee_30s_linear_infinite] font-serif text-[14vw] md:text-[10vw] leading-none tracking-tight">
+      <div className="overflow-hidden py-8 sm:py-10 md:py-14 border-b border-border">
+        <div className="flex whitespace-nowrap animate-[marquee_30s_linear_infinite] font-serif leading-none tracking-tight" style={{ fontSize: "clamp(3rem, 12vw, 12rem)" }}>
           {Array.from({ length: 4 }).map((_, i) => (
-            <span key={i} className="px-8 flex items-center gap-8">
+            <span key={i} className="px-4 sm:px-8 flex items-center gap-4 sm:gap-8">
               Divyansh Agarwal
               <span className="text-accent">✦</span>
             </span>
@@ -36,7 +36,7 @@ export function Footer() {
         </div>
       </div>
 
-      <div className="px-6 md:px-10 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-xs font-mono text-muted">
+      <div className="px-4 sm:px-6 md:px-10 py-6 sm:py-8 grid grid-cols-2 md:grid-cols-4 gap-5 sm:gap-6 text-[11px] sm:text-xs font-mono text-muted">
         <div>
           <span className="block uppercase tracking-widest text-foreground mb-1">
             Local time

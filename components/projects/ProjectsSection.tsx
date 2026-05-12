@@ -60,24 +60,23 @@ export function ProjectsSection() {
     <section
       ref={sectionRef}
       id="projects"
-      className="relative w-full thin-divider"
-      style={{ height: "360vh" }}
+      className="relative w-full thin-divider md:[height:360vh] [height:280vh]"
     >
-      <div className="sticky top-0 h-screen flex items-center px-6 md:px-10 py-12 overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-8 md:gap-12 items-start">
-          {/* LEFT — header + active project detail */}
-          <div className="col-span-12 md:col-span-5 flex flex-col gap-6">
+      <div className="sticky top-0 h-screen flex items-center px-4 sm:px-6 md:px-10 py-10 md:py-12 overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full flex flex-col gap-4 md:grid md:grid-cols-12 md:gap-12 md:items-start">
+          {/* LEFT (md+) / BOTTOM (mobile) — header + active project detail */}
+          <div className="order-2 md:order-1 md:col-span-5 flex flex-col gap-3 md:gap-6">
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
+              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-muted">
                 02 / Projects
               </span>
-              <span className="font-mono text-xs uppercase tracking-widest text-accent">
+              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-accent">
                 {String(topIdx + 1).padStart(2, "0")} /{" "}
                 {String(N).padStart(2, "0")}
               </span>
             </div>
 
-            <h2 className="font-serif text-3xl md:text-[2.6rem] leading-[0.95] tracking-tight">
+            <h2 className="hidden md:block font-serif text-3xl md:text-[2.6rem] leading-[0.95] tracking-tight">
               Things I&apos;ve <em className="italic">shipped</em>, broken, and
               rebuilt.
             </h2>
@@ -87,9 +86,9 @@ export function ProjectsSection() {
             <DeckProgress topIdx={topIdx} total={N} onJump={jumpTo} />
           </div>
 
-          {/* RIGHT — deck */}
-          <div className="col-span-12 md:col-span-7 relative h-[60vh] md:h-[68vh] flex items-center justify-center">
-            <div className="relative w-[260px] sm:w-[320px] md:w-[360px] aspect-[4/5]">
+          {/* RIGHT (md+) / TOP (mobile) — deck */}
+          <div className="order-1 md:order-2 md:col-span-7 relative h-[36vh] sm:h-[44vh] md:h-[68vh] flex items-center justify-center">
+            <div className="relative w-[200px] sm:w-[260px] md:w-[360px] aspect-[4/5]">
               {projects.map((p, i) => (
                 <DeckCard
                   key={p.slug}
@@ -332,9 +331,9 @@ function ActiveProjectInfo({ project }: { project: Project }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -6 }}
         transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
-        className="flex flex-col gap-3 mt-2"
+        className="flex flex-col gap-2 md:gap-3 mt-1 md:mt-2"
       >
-        <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-widest">
+        <div className="flex flex-wrap items-center gap-2 md:gap-3 font-mono text-[10px] uppercase tracking-widest">
           <span style={{ color: tint }}>
             {CATEGORY_LABEL[project.category]}
           </span>
@@ -348,20 +347,21 @@ function ActiveProjectInfo({ project }: { project: Project }) {
           )}
         </div>
 
-        <h3 className="font-serif italic text-4xl md:text-[3rem] leading-[0.95] tracking-tight">
+        <h3 className="font-serif italic text-2xl sm:text-3xl md:text-[3rem] leading-[0.95] tracking-tight">
           {project.title}
         </h3>
 
-        <p className="font-serif text-lg md:text-xl text-foreground/85 leading-snug">
+        <p className="font-serif text-base sm:text-lg md:text-xl text-foreground/85 leading-snug">
           {project.tagline}
         </p>
 
-        <p className="text-sm md:text-[15px] text-muted leading-relaxed">
+        {/* full description: desktop only — mobile is space-constrained */}
+        <p className="hidden md:block text-sm md:text-[15px] text-muted leading-relaxed">
           {project.description}
         </p>
 
         <ul className="flex flex-wrap gap-1.5 mt-1">
-          {project.tech.map((t) => (
+          {project.tech.slice(0, 4).map((t) => (
             <li
               key={t}
               className="font-mono text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-full text-muted"
@@ -369,16 +369,21 @@ function ActiveProjectInfo({ project }: { project: Project }) {
               {t}
             </li>
           ))}
+          {project.tech.length > 4 && (
+            <li className="font-mono text-[10px] uppercase tracking-wider px-2 py-1 text-muted/60 md:hidden">
+              +{project.tech.length - 4}
+            </li>
+          )}
         </ul>
 
         {hasLinks && (
-          <div className="flex flex-wrap gap-3 mt-2">
+          <div className="flex flex-wrap gap-2 md:gap-3 mt-1 md:mt-2">
             {project.href && (
               <a
                 href={project.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-background font-mono text-[11px] uppercase tracking-widest hover:opacity-90 transition-opacity"
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-accent text-background font-mono text-[10px] sm:text-[11px] uppercase tracking-widest hover:opacity-90 transition-opacity"
               >
                 Live <span aria-hidden>↗</span>
               </a>
@@ -388,7 +393,7 @@ function ActiveProjectInfo({ project }: { project: Project }) {
                 href={project.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border font-mono text-[11px] uppercase tracking-widest text-foreground hover:border-accent hover:text-accent transition-colors"
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-foreground hover:border-accent hover:text-accent transition-colors"
               >
                 Source <span aria-hidden>↗</span>
               </a>

@@ -33,9 +33,9 @@ export function HeroSection() {
 
       {/* overlay — non-interactive UI text. The hero name + tagline live INSIDE
            the CRT screen now (typewriter), so this overlay just gives context. */}
-      <div className="relative z-10 pointer-events-none w-full h-screen flex flex-col justify-between px-6 md:px-10 py-28 md:py-32">
+      <div className="relative z-10 pointer-events-none w-full h-screen flex flex-col justify-between px-4 sm:px-6 md:px-10 py-24 sm:py-28 md:py-32">
         {/* top label */}
-        <div className="flex items-start justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
+        <div className="flex items-start justify-between font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.3em] text-muted gap-3">
           <div className="flex flex-col gap-1">
             <span className="text-foreground">Divyansh Agarwal</span>
             <span>Portfolio · {new Date().getFullYear()}</span>
@@ -53,10 +53,15 @@ export function HeroSection() {
         <div className="flex-1" />
 
         {/* bottom row */}
-        <div className="flex items-end justify-between gap-6">
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted max-w-xs leading-relaxed">
-            <span className="text-foreground">Controls</span> · Arrows/WASD ·
-            Space to pause · Click knob to switch channel
+        <div className="flex items-end justify-between gap-4 md:gap-6">
+          <div className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.3em] text-muted max-w-[16rem] md:max-w-xs leading-relaxed">
+            <span className="text-foreground">Controls</span>
+            {/* desktop hint — keyboard + knob */}
+            <span className="hidden md:inline">
+              {" "}· Arrows/WASD · Space to pause · Click knob to switch channel
+            </span>
+            {/* mobile hint — tap to interact */}
+            <span className="md:hidden"> · Tap screen to play</span>
           </div>
 
           <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted text-right hidden md:block">

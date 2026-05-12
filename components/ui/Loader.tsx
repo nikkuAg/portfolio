@@ -234,13 +234,17 @@ export function Loader() {
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3 }}
-              className="absolute top-6 md:top-10 left-6 md:left-10 right-6 md:right-10 flex items-baseline justify-between font-mono text-[11px] uppercase tracking-widest text-muted"
+              className="absolute top-4 md:top-10 left-4 md:left-10 right-4 md:right-10 flex items-baseline justify-between gap-3 font-mono text-[10px] md:text-[11px] uppercase tracking-widest text-muted"
             >
-              <span className="flex items-center gap-2">
-                <span className="size-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(200,255,61,0.8)] animate-pulse" />
-                Divyansh Agarwal · Portfolio
+              <span className="flex items-center gap-2 truncate">
+                <span className="size-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(200,255,61,0.8)] animate-pulse shrink-0" />
+                <span className="truncate">
+                  <span className="hidden sm:inline">Divyansh Agarwal · </span>
+                  <span className="sm:hidden">DA · </span>
+                  Portfolio
+                </span>
               </span>
-              <span className="opacity-70">click to skip ↗</span>
+              <span className="opacity-70 shrink-0">tap to skip ↗</span>
             </motion.div>
 
             {/* center counter + status */}
@@ -250,31 +254,33 @@ export function Loader() {
               transition={{ duration: 0.3, delay: 0.05 }}
               className="absolute inset-0 grid place-items-center pointer-events-none"
             >
-              <div className="flex flex-col items-center gap-3 md:gap-5 -mt-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.5em] text-muted">
+              <div className="flex flex-col items-center gap-3 md:gap-5 -mt-2 px-4 text-center">
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.4em] sm:tracking-[0.5em] text-muted">
                   {STATUS_LINES[lineIdx]}
                 </span>
                 <span
-                  className="font-serif italic text-[22vw] md:text-[14vw] leading-[0.85] tracking-tight text-foreground"
+                  className="font-serif italic leading-[0.85] tracking-tight text-foreground"
                   style={{
+                    fontSize: "clamp(80px, 18vw, 240px)",
                     textShadow:
                       "0 0 36px rgba(200,255,61,0.18), 0 0 6px rgba(200,255,61,0.18)",
                   }}
                 >
                   {pct.toString().padStart(3, "0")}
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.5em] text-muted/60">
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.4em] sm:tracking-[0.5em] text-muted/60">
                   / 100
                 </span>
               </div>
             </motion.div>
 
-            {/* boot terminal feed (left bottom) */}
+            {/* boot terminal feed (left bottom) — hidden on small phones to
+                avoid colliding with the progress bar */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.12 }}
-              className="absolute bottom-6 md:bottom-10 left-6 md:left-10 font-mono text-[10px] uppercase tracking-widest text-muted/70 leading-relaxed max-w-xs"
+              className="hidden sm:block absolute bottom-6 md:bottom-10 left-4 md:left-10 font-mono text-[10px] uppercase tracking-widest text-muted/70 leading-relaxed max-w-[14rem] md:max-w-xs"
             >
               {BOOT_LINES.slice(0, bootIdx + 1).map((l, i) => (
                 <div key={l} className="flex items-baseline gap-2">
@@ -289,12 +295,12 @@ export function Loader() {
               ))}
             </motion.div>
 
-            {/* progress bar (right bottom) */}
+            {/* progress bar (right bottom) — full-width on mobile, fixed on desktop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.08 }}
-              className="absolute bottom-6 md:bottom-10 right-6 md:right-10 w-56"
+              className="absolute bottom-6 md:bottom-10 right-4 md:right-10 left-4 sm:left-auto sm:w-44 md:w-56"
             >
               <div className="flex items-baseline justify-between mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
                 <span>load</span>

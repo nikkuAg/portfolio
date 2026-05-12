@@ -341,7 +341,8 @@ export function SkillsConstellation() {
     <div className="relative w-full">
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-[440px] md:h-[460px] block"
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-[320px] sm:h-[400px] md:h-[460px] block"
         role="img"
         aria-label="Skill constellation: TypeScript, React, Next.js, Tailwind, Framer Motion, GSAP, Three.js, React Three Fiber, WebGL, GLSL, Rapier, Unity, C#, Node.js, Vite, Figma"
       >
@@ -472,8 +473,11 @@ export function SkillsConstellation() {
         </g>
       </svg>
 
-      <div className="absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
+      <div className="hidden md:block absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
         hover any node to follow its connections
+      </div>
+      <div className="md:hidden absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
+        tap any node to follow its connections
       </div>
     </div>
   );
