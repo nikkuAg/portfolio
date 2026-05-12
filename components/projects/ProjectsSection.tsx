@@ -17,10 +17,19 @@ const CATEGORY_LABEL: Record<Project["category"], string> = {
   research: "Research",
 };
 
+// each category has its own phosphor — used for border, glow, gradient
+// tint, category label, and the centered title on the card face
 const CATEGORY_TINT: Record<Project["category"], string> = {
-  build: "#f5f5f5",
-  game: "#c8ff3d",
-  research: "#7aa8ff",
+  build: "#ff9b3d", // warm amber
+  game: "#c8ff3d", // phosphor lime
+  research: "#7aa8ff", // cool blue
+};
+
+// rgb tuple form for rgba() — alpha varies per usage
+const CATEGORY_RGB: Record<Project["category"], string> = {
+  build: "255,155,61",
+  game: "200,255,61",
+  research: "122,168,255",
 };
 
 export function ProjectsSection() {
@@ -213,29 +222,21 @@ function CardFace({
   index: number;
 }) {
   const tint = CATEGORY_TINT[project.category];
-  const isAccent = project.category === "game";
+  const rgb = CATEGORY_RGB[project.category];
 
   return (
     <div
       className="relative w-full h-full rounded-2xl overflow-hidden border bg-card"
       style={{
-        borderColor: isAccent
-          ? "rgba(200,255,61,0.45)"
-          : "rgba(255,255,255,0.12)",
-        boxShadow: isAccent
-          ? "0 35px 90px -20px rgba(200,255,61,0.28), 0 12px 32px rgba(0,0,0,0.55)"
-          : "0 25px 70px -16px rgba(0,0,0,0.65), 0 10px 24px rgba(0,0,0,0.45)",
+        borderColor: `rgba(${rgb}, 0.5)`,
+        boxShadow: `0 30px 80px -20px rgba(${rgb}, 0.28), 0 12px 28px rgba(0,0,0,0.55)`,
       }}
     >
-      {/* gradient + texture */}
+      {/* category-tinted gradient — top-left bloom + dark vertical */}
       <div
         className="absolute inset-0"
         style={{
-          background: isAccent
-            ? "radial-gradient(120% 80% at 0% 0%, rgba(200,255,61,0.18), transparent 60%), linear-gradient(180deg, #0d0d0d 0%, #060606 100%)"
-            : project.category === "research"
-              ? "radial-gradient(120% 80% at 100% 0%, rgba(122,168,255,0.12), transparent 60%), linear-gradient(180deg, #131313 0%, #070707 100%)"
-              : "radial-gradient(120% 80% at 100% 0%, rgba(255,255,255,0.05), transparent 60%), linear-gradient(180deg, #131313 0%, #070707 100%)",
+          background: `radial-gradient(120% 80% at 0% 0%, rgba(${rgb},0.22), transparent 60%), radial-gradient(80% 60% at 100% 100%, rgba(${rgb},0.08), transparent 60%), linear-gradient(180deg, #0d0d0d 0%, #060606 100%)`,
         }}
       />
       <div
@@ -256,13 +257,16 @@ function CardFace({
           </span>
           <span
             className="font-mono text-[10px] uppercase tracking-widest"
-            style={{ color: tint }}
+            style={{
+              color: tint,
+              textShadow: `0 0 8px rgba(${rgb}, 0.5)`,
+            }}
           >
             {CATEGORY_LABEL[project.category]}
           </span>
         </div>
 
-        {/* center title */}
+        {/* center title — uses the category tint with a soft glow */}
         <div className="flex-1 flex items-center justify-center text-center px-2">
           <h3
             className={`font-serif italic leading-[0.92] tracking-tight ${
@@ -272,7 +276,10 @@ function CardFace({
                   ? "text-4xl md:text-5xl"
                   : "text-5xl md:text-6xl"
             }`}
-            style={{ color: isAccent ? tint : "#f5f5f5" }}
+            style={{
+              color: tint,
+              textShadow: `0 0 26px rgba(${rgb}, 0.35), 0 0 4px rgba(${rgb}, 0.25)`,
+            }}
           >
             {project.title}
           </h3>
@@ -283,16 +290,19 @@ function CardFace({
           <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
             {project.year}
           </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted/60">
+          <span
+            className="font-mono text-[10px] uppercase tracking-[0.25em]"
+            style={{ color: `rgba(${rgb}, 0.65)` }}
+          >
             {project.tech[0]}
           </span>
         </div>
 
-        {/* corner ticks */}
-        <CornerTick className="top-2 left-2" sides="tl" />
-        <CornerTick className="top-2 right-2" sides="tr" />
-        <CornerTick className="bottom-2 left-2" sides="bl" />
-        <CornerTick className="bottom-2 right-2" sides="br" />
+        {/* corner ticks — also colored per category for consistency */}
+        <CornerTick className="top-2 left-2" sides="tl" rgb={rgb} />
+        <CornerTick className="top-2 right-2" sides="tr" rgb={rgb} />
+        <CornerTick className="bottom-2 left-2" sides="bl" rgb={rgb} />
+        <CornerTick className="bottom-2 right-2" sides="br" rgb={rgb} />
       </div>
     </div>
   );
@@ -301,15 +311,18 @@ function CardFace({
 function CornerTick({
   className,
   sides,
+  rgb,
 }: {
   className: string;
   sides: "tl" | "tr" | "bl" | "br";
+  rgb: string;
 }) {
   return (
     <span
       aria-hidden
-      className={`absolute size-2 border-foreground/25 ${className}`}
+      className={`absolute size-2 ${className}`}
       style={{
+        borderColor: `rgba(${rgb}, 0.45)`,
         borderTopWidth: sides[0] === "t" ? 1 : 0,
         borderBottomWidth: sides[0] === "b" ? 1 : 0,
         borderLeftWidth: sides[1] === "l" ? 1 : 0,
