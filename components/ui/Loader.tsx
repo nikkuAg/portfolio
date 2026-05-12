@@ -85,8 +85,20 @@ export function Loader() {
   const [pct, setPct] = useState(0);
   const [phase, setPhase] = useState<Phase>("boot");
   const startedRef = useRef(false);
+  const closingRef = useRef(false);
+  // ALL pending timers — owned at component scope so they survive effect
+  // re-runs caused by phase changes (the previous version put close timers
+  // inside a phase-keyed effect, which meant scheduling vanishLine fired its
+  // re-run cleanup and cancelled vanishDot/done/setHidden — that's the
+  // "stall on a thin black line forever" first-load bug)
+  const timersRef = useRef<number[]>([]);
 
-  // mount: skip if already loaded or reduced motion; otherwise start boot timeline
+  function track(id: number) {
+    timersRef.current.push(id);
+    return id;
+  }
+
+  // ── mount: skip if already loaded / reduced motion; otherwise boot in ──
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem("loader-done") === "1") {
@@ -101,17 +113,12 @@ export function Loader() {
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const t1 = window.setTimeout(() => setPhase("line"), 90);
-    const t2 = window.setTimeout(() => setPhase("open"), 320);
-    const t3 = window.setTimeout(() => setPhase("loading"), 680);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-    };
+    track(window.setTimeout(() => setPhase("line"), 90));
+    track(window.setTimeout(() => setPhase("open"), 320));
+    track(window.setTimeout(() => setPhase("loading"), 680));
   }, []);
 
-  // count up while loading
+  // ── count progress while loading ──
   useEffect(() => {
     if (phase !== "loading") return;
     let p = 0;
@@ -129,31 +136,30 @@ export function Loader() {
     return () => window.clearInterval(id);
   }, [phase]);
 
-  // settle → power-off sequence
+  // ── once we reach settle, schedule the entire close chain ONCE ──
+  // The chain lives on timersRef, so re-renders triggered by setPhase
+  // calls inside the chain don't cancel pending steps.
   useEffect(() => {
     if (phase !== "settle") return;
+    if (closingRef.current) return;
+    closingRef.current = true;
     sessionStorage.setItem("loader-done", "1");
-    const t1 = window.setTimeout(() => setPhase("vanishLine"), 420);
-    const t2 = window.setTimeout(() => setPhase("vanishDot"), 420 + 220);
-    const t3 = window.setTimeout(() => setPhase("done"), 420 + 220 + 180);
-    const t4 = window.setTimeout(
-      () => setHidden(true),
-      420 + 220 + 180 + 150,
-    );
-    return () => {
-      [t1, t2, t3, t4].forEach(window.clearTimeout);
-    };
+    track(window.setTimeout(() => setPhase("vanishLine"), 420));
+    track(window.setTimeout(() => setPhase("vanishDot"), 420 + 220));
+    track(window.setTimeout(() => setPhase("done"), 420 + 220 + 180));
+    track(window.setTimeout(() => setHidden(true), 420 + 220 + 180 + 150));
   }, [phase]);
 
+  // ── unmount: cancel any in-flight timers ──
+  useEffect(() => {
+    return () => {
+      for (const id of timersRef.current) window.clearTimeout(id);
+      timersRef.current = [];
+    };
+  }, []);
+
   function skip() {
-    if (
-      phase === "settle" ||
-      phase === "vanishLine" ||
-      phase === "vanishDot" ||
-      phase === "done"
-    ) {
-      return;
-    }
+    if (closingRef.current) return;
     setPct(100);
     setPhase("settle");
   }
@@ -198,7 +204,6 @@ export function Loader() {
                   "radial-gradient(60% 50% at 50% 50%, rgba(200,255,61,0.07), transparent 70%)",
               }}
             />
-
             {/* static scanlines */}
             <div
               aria-hidden
@@ -208,7 +213,6 @@ export function Loader() {
                   "repeating-linear-gradient(0deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 3px)",
               }}
             />
-
             {/* moving bright scanline (CRT crawl) */}
             {showContent && (
               <motion.div
@@ -239,48 +243,78 @@ export function Loader() {
               <span className="flex items-center gap-2 truncate">
                 <span className="size-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(200,255,61,0.8)] animate-pulse shrink-0" />
                 <span className="truncate">
-                  <span className="hidden sm:inline">Divyansh Agarwal · </span>
-                  <span className="sm:hidden">DA · </span>
-                  Portfolio
+                  CH·01 ·{" "}
+                  <span className="hidden sm:inline">portfolio.sys</span>
+                  <span className="sm:hidden">v1.0</span>
                 </span>
               </span>
               <span className="opacity-70 shrink-0">tap to skip ↗</span>
             </motion.div>
 
-            {/* center counter + status */}
+            {/* CENTER — brand-forward (no number counter) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.05 }}
-              className="absolute inset-0 grid place-items-center pointer-events-none"
+              className="absolute inset-0 grid place-items-center pointer-events-none px-6"
             >
-              <div className="flex flex-col items-center gap-3 md:gap-5 -mt-2 px-4 text-center">
-                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.4em] sm:tracking-[0.5em] text-muted">
-                  {STATUS_LINES[lineIdx]}
+              <div className="flex flex-col items-center gap-5 md:gap-7 text-center">
+                {/* tiny eyebrow tag */}
+                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.5em] text-muted/70">
+                  Now Tuning
                 </span>
-                <span
-                  className="font-serif italic leading-[0.85] tracking-tight text-foreground"
-                  style={{
-                    fontSize: "clamp(80px, 18vw, 240px)",
-                    textShadow:
-                      "0 0 36px rgba(200,255,61,0.18), 0 0 6px rgba(200,255,61,0.18)",
-                  }}
-                >
-                  {pct.toString().padStart(3, "0")}
-                </span>
-                <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.4em] sm:tracking-[0.5em] text-muted/60">
-                  / 100
-                </span>
+
+                {/* the brand — italic serif */}
+                <BrandMark />
+
+                {/* phosphor divider with star */}
+                <div className="flex items-center gap-3 text-accent">
+                  <span
+                    className="h-px w-12 sm:w-16"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(200,255,61,0.7))",
+                    }}
+                  />
+                  <span
+                    className="text-[10px] sm:text-xs"
+                    style={{
+                      textShadow: "0 0 10px rgba(200,255,61,0.7)",
+                    }}
+                  >
+                    ✦
+                  </span>
+                  <span
+                    className="h-px w-12 sm:w-16"
+                    style={{
+                      background:
+                        "linear-gradient(270deg, transparent, rgba(200,255,61,0.7))",
+                    }}
+                  />
+                </div>
+
+                {/* status typewriter (cycles as % advances) */}
+                <div className="h-5 flex items-center">
+                  <span
+                    key={STATUS_LINES[lineIdx]}
+                    className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/85 inline-flex items-center"
+                  >
+                    <span className="text-accent mr-2">{">"}</span>
+                    <TypedLine text={STATUS_LINES[lineIdx]} />
+                    {phase !== "settle" && phase !== "done" && (
+                      <span className="ml-0.5 inline-block w-[0.45em] h-[1em] -mb-[0.1em] bg-accent animate-pulse" />
+                    )}
+                  </span>
+                </div>
               </div>
             </motion.div>
 
-            {/* boot terminal feed (left bottom) — hidden on small phones to
-                avoid colliding with the progress bar */}
+            {/* boot terminal feed (left bottom) — desktop only */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.12 }}
-              className="hidden sm:block absolute bottom-6 md:bottom-10 left-4 md:left-10 font-mono text-[10px] uppercase tracking-widest text-muted/70 leading-relaxed max-w-[14rem] md:max-w-xs"
+              className="hidden sm:block absolute bottom-10 md:bottom-14 left-4 md:left-10 font-mono text-[10px] uppercase tracking-widest text-muted/70 leading-relaxed max-w-[14rem] md:max-w-xs"
             >
               {BOOT_LINES.slice(0, bootIdx + 1).map((l, i) => (
                 <div key={l} className="flex items-baseline gap-2">
@@ -295,29 +329,23 @@ export function Loader() {
               ))}
             </motion.div>
 
-            {/* progress bar (right bottom) — full-width on mobile, fixed on desktop */}
+            {/* full-width thin progress bar at the very bottom (no number) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.08 }}
-              className="absolute bottom-6 md:bottom-10 right-4 md:right-10 left-4 sm:left-auto sm:w-44 md:w-56"
+              className="absolute bottom-0 left-0 right-0 h-[2px] bg-border/40 overflow-hidden"
             >
-              <div className="flex items-baseline justify-between mb-2 font-mono text-[10px] uppercase tracking-widest text-muted">
-                <span>load</span>
-                <span>{pct.toString().padStart(3, "0")}%</span>
-              </div>
-              <div className="relative h-px w-full bg-border overflow-hidden">
-                <motion.div
-                  className="absolute left-0 top-0 h-full w-full origin-left"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, rgba(200,255,61,0.4) 0%, #c8ff3d 100%)",
-                    boxShadow: "0 0 10px rgba(200,255,61,0.55)",
-                  }}
-                  animate={{ scaleX: pct / 100 }}
-                  transition={{ duration: 0.18, ease: "linear" }}
-                />
-              </div>
+              <motion.div
+                className="absolute left-0 top-0 h-full w-full origin-left"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(200,255,61,0.35) 0%, #c8ff3d 100%)",
+                  boxShadow: "0 0 14px rgba(200,255,61,0.75)",
+                }}
+                animate={{ scaleX: pct / 100 }}
+                transition={{ duration: 0.2, ease: "linear" }}
+              />
             </motion.div>
           </motion.div>
 
@@ -340,4 +368,36 @@ export function Loader() {
       )}
     </AnimatePresence>
   );
+}
+
+function BrandMark() {
+  return (
+    <h1
+      className="font-serif leading-[0.88] tracking-tight text-foreground"
+      style={{
+        fontSize: "clamp(2.5rem, 9vw, 7rem)",
+        textShadow:
+          "0 0 38px rgba(200,255,61,0.16), 0 0 8px rgba(200,255,61,0.16)",
+      }}
+    >
+      <span className="block italic">Divyansh</span>
+      <span className="block italic">Agarwal</span>
+    </h1>
+  );
+}
+
+// Typewriter for the cycling status line — re-mounted via key when text changes
+function TypedLine({ text }: { text: string }) {
+  const [shown, setShown] = useState("");
+  useEffect(() => {
+    setShown("");
+    let i = 0;
+    const id = window.setInterval(() => {
+      i++;
+      setShown(text.slice(0, i));
+      if (i >= text.length) window.clearInterval(id);
+    }, 30);
+    return () => window.clearInterval(id);
+  }, [text]);
+  return <span>{shown}</span>;
 }
