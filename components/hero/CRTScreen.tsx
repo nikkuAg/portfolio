@@ -109,8 +109,47 @@ export function CRTScreen() {
       startTimeRef.current = performance.now() - TYPE_DURATION_MS;
     }
 
+    // mobile / touch input via the on-screen MobileGamepad — same gating
+    // (typewriter must finish first) and same effects on game state
+    function onSnakeInput(e: Event) {
+      if (!typeDoneRef.current) return;
+      const detail = (e as CustomEvent<
+        | { kind: "dir"; dir: "up" | "down" | "left" | "right" }
+        | { kind: "pause" }
+      >).detail;
+      lastInputRef.current = performance.now();
+      idleRef.current = false;
+      dismissedRef.current = true;
+
+      if (detail.kind === "pause") {
+        if (stateRef.current.gameOver) {
+          stateRef.current = createSnake();
+        } else {
+          stateRef.current = {
+            ...stateRef.current,
+            paused: !stateRef.current.paused,
+          };
+        }
+        return;
+      }
+
+      const dir =
+        detail.dir === "up"
+          ? { x: 0, y: -1 }
+          : detail.dir === "down"
+            ? { x: 0, y: 1 }
+            : detail.dir === "left"
+              ? { x: -1, y: 0 }
+              : { x: 1, y: 0 };
+      stateRef.current = inputSnake(stateRef.current, dir);
+    }
+
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("snake-input", onSnakeInput);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("snake-input", onSnakeInput);
+    };
   }, []);
 
   useFrame((_, delta) => {
@@ -139,7 +178,11 @@ export function CRTScreen() {
     // overlay timing
     const elapsed = now - (startTimeRef.current ?? now);
     const typeProgress = Math.min(elapsed / TYPE_DURATION_MS, 1);
-    if (typeProgress >= 1) typeDoneRef.current = true;
+    if (typeProgress >= 1 && !typeDoneRef.current) {
+      typeDoneRef.current = true;
+      // notify the touch gamepad it can fade in now
+      window.dispatchEvent(new CustomEvent("crt-typedone"));
+    }
 
     const targetOpacity = dismissedRef.current ? 0 : 1;
     const fadeStep = Math.min(1, (delta * 1000) / FADE_DURATION_MS);

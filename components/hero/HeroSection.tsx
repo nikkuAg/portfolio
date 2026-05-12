@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { about } from "@/content/about";
 import { CHANNELS, useChannel } from "./useChannel";
+import { MobileGamepad } from "./MobileGamepad";
 
 const CRTScene = dynamic(
   () => import("./CRTScene").then((m) => m.CRTScene),
@@ -33,7 +34,7 @@ export function HeroSection() {
 
       {/* overlay — non-interactive UI text. The hero name + tagline live INSIDE
            the CRT screen now (typewriter), so this overlay just gives context. */}
-      <div className="relative z-10 pointer-events-none w-full h-screen flex flex-col justify-between px-4 sm:px-6 md:px-10 py-24 sm:py-28 md:py-32">
+      <div className="relative z-10 pointer-events-none w-full h-screen flex flex-col justify-between px-4 sm:px-6 md:px-10 py-16 sm:py-20 md:py-32">
         {/* top label */}
         <div className="flex items-start justify-between font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.3em] text-muted gap-3">
           <div className="flex flex-col gap-1">
@@ -46,6 +47,11 @@ export function HeroSection() {
               Live · CH·{String(channel + 1).padStart(2, "0")}
             </span>
             <span>Channel: {ch.label}</span>
+          </div>
+          {/* mobile-only compact channel/live pill */}
+          <div className="md:hidden flex items-center gap-1.5 text-foreground">
+            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+            <span>CH·{String(channel + 1).padStart(2, "0")}</span>
           </div>
         </div>
 
@@ -60,8 +66,8 @@ export function HeroSection() {
             <span className="hidden md:inline">
               {" "}· Arrows/WASD · Space to pause · Click knob to switch channel
             </span>
-            {/* mobile hint — tap to interact */}
-            <span className="md:hidden"> · Tap screen to play</span>
+            {/* mobile hint — D-pad reference */}
+            <span className="md:hidden"> · D-pad below · tap CRT to wake</span>
           </div>
 
           <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted text-right hidden md:block">
@@ -70,6 +76,9 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* mobile / touch D-pad — talks to the CRT via window CustomEvent */}
+      <MobileGamepad />
     </section>
   );
 }

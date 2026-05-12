@@ -27,6 +27,16 @@ export function CRTMonitor() {
       0.05,
     );
     groupRef.current.position.y = Math.sin(t * 0.6) * 0.04;
+
+    // auto-fit the monitor to whatever viewport we're in. The casing is
+    // ~3.8 wide × 3.6 tall (incl. stand); we leave a small breathing
+    // margin so the bezel doesn't kiss the screen edge on portrait phones.
+    const { viewport } = state;
+    const targetW = 4.4;
+    const targetH = 4.4;
+    const fit = Math.min(1, viewport.width / targetW, viewport.height / targetH);
+    const scale = THREE.MathUtils.lerp(groupRef.current.scale.x, fit, 0.15);
+    groupRef.current.scale.setScalar(scale);
   });
 
   return (
