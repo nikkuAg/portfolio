@@ -251,58 +251,31 @@ export function Loader() {
               <span className="opacity-70 shrink-0">tap to skip ↗</span>
             </motion.div>
 
-            {/* CENTER — brand-forward (no number counter) */}
+            {/* CENTER — liquid-fill brand mark IS the progress indicator */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
               transition={{ duration: 0.3, delay: 0.05 }}
               className="absolute inset-0 grid place-items-center pointer-events-none px-6"
             >
-              <div className="flex flex-col items-center gap-5 md:gap-7 text-center">
-                {/* tiny eyebrow tag */}
+              <div className="flex flex-col items-center gap-6 md:gap-8 text-center">
+                {/* tiny eyebrow */}
                 <span className="font-mono text-[9px] sm:text-[10px] uppercase tracking-[0.5em] text-muted/70">
                   Now Tuning
                 </span>
 
-                {/* the brand — italic serif */}
-                <BrandMark />
+                {/* THE brand — fills bottom-up with lime as pct advances */}
+                <LiquidBrand pct={pct} />
 
-                {/* phosphor divider with star */}
-                <div className="flex items-center gap-3 text-accent">
-                  <span
-                    className="h-px w-12 sm:w-16"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, transparent, rgba(200,255,61,0.7))",
-                    }}
-                  />
-                  <span
-                    className="text-[10px] sm:text-xs"
-                    style={{
-                      textShadow: "0 0 10px rgba(200,255,61,0.7)",
-                    }}
-                  >
-                    ✦
-                  </span>
-                  <span
-                    className="h-px w-12 sm:w-16"
-                    style={{
-                      background:
-                        "linear-gradient(270deg, transparent, rgba(200,255,61,0.7))",
-                    }}
-                  />
-                </div>
-
-                {/* status typewriter (cycles as % advances) */}
-                <div className="h-5 flex items-center">
+                {/* status line — small, just enough texture */}
+                <div className="h-4 flex items-center">
                   <span
                     key={STATUS_LINES[lineIdx]}
-                    className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-foreground/85 inline-flex items-center"
+                    className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-muted inline-flex items-center"
                   >
-                    <span className="text-accent mr-2">{">"}</span>
                     <TypedLine text={STATUS_LINES[lineIdx]} />
                     {phase !== "settle" && phase !== "done" && (
-                      <span className="ml-0.5 inline-block w-[0.45em] h-[1em] -mb-[0.1em] bg-accent animate-pulse" />
+                      <span className="ml-1 inline-block w-[0.4em] h-[0.9em] bg-accent animate-pulse" />
                     )}
                   </span>
                 </div>
@@ -329,24 +302,6 @@ export function Loader() {
               ))}
             </motion.div>
 
-            {/* full-width thin progress bar at the very bottom (no number) */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: showContent ? 1 : 0 }}
-              transition={{ duration: 0.3, delay: 0.08 }}
-              className="absolute bottom-0 left-0 right-0 h-[2px] bg-border/40 overflow-hidden"
-            >
-              <motion.div
-                className="absolute left-0 top-0 h-full w-full origin-left"
-                style={{
-                  background:
-                    "linear-gradient(90deg, rgba(200,255,61,0.35) 0%, #c8ff3d 100%)",
-                  boxShadow: "0 0 14px rgba(200,255,61,0.75)",
-                }}
-                animate={{ scaleX: pct / 100 }}
-                transition={{ duration: 0.2, ease: "linear" }}
-              />
-            </motion.div>
           </motion.div>
 
           {/* lingering phosphor dot during the contract */}
@@ -370,19 +325,75 @@ export function Loader() {
   );
 }
 
-function BrandMark() {
+// "Liquid" brand mark — italic-serif name rendered twice on top of each other:
+// 1) bottom layer is a faint outline (always visible, gives the vessel shape)
+// 2) top layer is solid lime, clipped from below via a CSS gradient mask
+//    whose stop position is driven by `pct` — so the name fills bottom-up
+//    with phosphor as load progresses
+function LiquidBrand({ pct }: { pct: number }) {
+  // small overshoot so the very last sliver fully fills (gradients with two
+  // stops at the same %% can leave a 1px seam in some browsers)
+  const fill = Math.min(100, pct + 0.5);
+  // glow scales with completion so the brand "warms up"
+  const glow = (pct / 100).toFixed(2);
+
+  const sharedStyle: React.CSSProperties = {
+    fontSize: "clamp(2.75rem, 10vw, 8rem)",
+    lineHeight: 0.88,
+    letterSpacing: "-0.01em",
+  };
+
   return (
-    <h1
-      className="font-serif leading-[0.88] tracking-tight text-foreground"
-      style={{
-        fontSize: "clamp(2.5rem, 9vw, 7rem)",
-        textShadow:
-          "0 0 38px rgba(200,255,61,0.16), 0 0 8px rgba(200,255,61,0.16)",
-      }}
-    >
-      <span className="block italic">Divyansh</span>
-      <span className="block italic">Agarwal</span>
-    </h1>
+    <div className="relative" aria-label="Divyansh Agarwal">
+      {/* layer 1 — outline (always visible; the "vessel") */}
+      <h1
+        aria-hidden
+        className="font-serif text-foreground/15 select-none"
+        style={sharedStyle}
+      >
+        <span className="block italic">Divyansh</span>
+        <span className="block italic">Agarwal</span>
+      </h1>
+
+      {/* layer 2 — lime fill clipped from below by a hard-stop gradient */}
+      <h1
+        aria-hidden
+        className="font-serif select-none absolute inset-0"
+        style={{
+          ...sharedStyle,
+          // gradient: lime up to `fill` from bottom, transparent above
+          backgroundImage: `linear-gradient(to top,
+            #c8ff3d 0%,
+            #c8ff3d ${fill}%,
+            transparent ${fill}%,
+            transparent 100%)`,
+          WebkitBackgroundClip: "text",
+          backgroundClip: "text",
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+          // phosphor halo intensifies as fill grows
+          filter: `drop-shadow(0 0 ${(pct * 0.18).toFixed(1)}px rgba(200,255,61,${glow})) drop-shadow(0 0 4px rgba(200,255,61,${(Number(glow) * 0.5).toFixed(2)}))`,
+          transition: "filter 0.18s linear",
+        }}
+      >
+        <span className="block italic">Divyansh</span>
+        <span className="block italic">Agarwal</span>
+      </h1>
+
+      {/* the moving fill line — a thin lime hairline at the boundary */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-0 right-0 h-[1.5px]"
+        style={{
+          bottom: `${pct}%`,
+          background:
+            "linear-gradient(90deg, transparent, rgba(200,255,61,0.7), transparent)",
+          boxShadow: "0 0 8px rgba(200,255,61,0.6)",
+          opacity: pct > 0 && pct < 100 ? 1 : 0,
+          transition: "opacity 0.2s linear",
+        }}
+      />
+    </div>
   );
 }
 
