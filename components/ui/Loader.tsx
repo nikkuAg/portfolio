@@ -210,6 +210,19 @@ export function Loader() {
               />
             )}
 
+            {/* corner brackets — viewfinder feel around the whole screen */}
+            {showContent && <CornerBrackets />}
+
+            {/* left + right HUD columns — telemetry around the swarm so
+                the screen reads as instrumented, not empty. Hidden on
+                small mobile where they would crowd the centerpiece. */}
+            {showContent && (
+              <>
+                <LeftHud pct={pct} />
+                <RightHud pct={pct} />
+              </>
+            )}
+
             {/* corner brand */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -451,6 +464,150 @@ function ParticleSwarm({
       ref={ref}
       className="absolute inset-0 w-full h-full pointer-events-none"
     />
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// HUD frame — corner brackets + side telemetry
+// ────────────────────────────────────────────────────────────────────────
+
+function CornerBrackets() {
+  // 4 lime L-shaped marks at the screen corners. Sized in vw so they scale.
+  return (
+    <div aria-hidden className="absolute inset-0 pointer-events-none z-20">
+      {(["tl", "tr", "bl", "br"] as const).map((corner) => {
+        const isTop = corner[0] === "t";
+        const isLeft = corner[1] === "l";
+        return (
+          <span
+            key={corner}
+            className="absolute"
+            style={{
+              top: isTop ? "12px" : "auto",
+              bottom: !isTop ? "12px" : "auto",
+              left: isLeft ? "12px" : "auto",
+              right: !isLeft ? "12px" : "auto",
+              width: 14,
+              height: 14,
+              borderColor: "rgba(200,255,61,0.55)",
+              borderTopWidth: isTop ? 1 : 0,
+              borderBottomWidth: !isTop ? 1 : 0,
+              borderLeftWidth: isLeft ? 1 : 0,
+              borderRightWidth: !isLeft ? 1 : 0,
+              borderStyle: "solid",
+              boxShadow: "0 0 6px rgba(200,255,61,0.35)",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function LeftHud({ pct }: { pct: number }) {
+  // freq/dBm tick on a slow timer so the readouts feel "alive" without
+  // distracting from the swarm
+  const [freq, setFreq] = useState("108.5");
+  const [dbm, setDbm] = useState("-47");
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setFreq((108.4 + Math.random() * 0.3).toFixed(1));
+      setDbm(String(-Math.floor(45 + Math.random() * 6)));
+    }, 380);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // density readout — particles feel "active" as pct grows
+  const active = Math.floor((pct / 100) * 320);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.35, delay: 0.2 }}
+      className="hidden sm:flex absolute left-4 md:left-10 top-1/2 -translate-y-1/2 flex-col gap-7 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none"
+    >
+      <HudReadout label="signal">
+        <span className="text-foreground">{freq}</span>
+        <span className="text-muted/50"> MHz</span>
+      </HudReadout>
+      <HudReadout label="carrier">
+        <span className="text-foreground">{dbm}</span>
+        <span className="text-muted/50"> dBm</span>
+      </HudReadout>
+      <HudReadout label="density">
+        <span className="text-foreground">{String(active).padStart(3, "0")}</span>
+        <span className="text-muted/50"> / 320</span>
+      </HudReadout>
+      <HudReadout label="band">
+        <span className="text-accent">phosphor</span>
+      </HudReadout>
+    </motion.div>
+  );
+}
+
+function RightHud({ pct }: { pct: number }) {
+  // three bars that fill at slightly different rates so they read as
+  // "subsystems acquiring lock" rather than copies of the same progress
+  const lock = Math.min(1, pct / 100);
+  const focus = Math.min(1, Math.max(0, (pct - 10) / 80));
+  const conv = Math.min(1, Math.max(0, (pct - 30) / 65));
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 8 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.35, delay: 0.2 }}
+      className="hidden sm:flex absolute right-4 md:right-10 top-1/2 -translate-y-1/2 flex-col gap-6 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none w-[120px] md:w-[140px]"
+    >
+      <HudBar label="lock" value={lock} />
+      <HudBar label="focus" value={focus} />
+      <HudBar label="conv" value={conv} />
+      <div className="flex items-baseline justify-between pt-3 border-t border-border/60">
+        <span>ch·01</span>
+        <span className="text-accent flex items-center gap-1">
+          <span className="size-1 rounded-full bg-accent animate-pulse" />
+          live
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function HudReadout({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1 min-w-[100px]">
+      <span className="text-[9px] tracking-[0.3em] text-muted/50">{label}</span>
+      <span className="text-[12px] tracking-[0.15em]">{children}</span>
+    </div>
+  );
+}
+
+function HudBar({ label, value }: { label: string; value: number }) {
+  const pct = Math.round(value * 100);
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between text-[9px] tracking-[0.3em] text-muted/60">
+        <span>{label}</span>
+        <span className="text-foreground/80">
+          {String(pct).padStart(3, "0")}
+        </span>
+      </div>
+      <div className="relative h-px bg-foreground/10 overflow-hidden">
+        <motion.div
+          className="absolute left-0 top-0 h-full w-full origin-left bg-accent"
+          style={{ boxShadow: "0 0 6px rgba(200,255,61,0.6)" }}
+          animate={{ scaleX: value }}
+          transition={{ duration: 0.2, ease: "linear" }}
+        />
+      </div>
+    </div>
   );
 }
 
