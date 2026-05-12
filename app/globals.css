@@ -215,13 +215,3 @@ html.lenis body {
     animation: none !important;
   }
 }
-
-/* TV-static jitter — used by the loader's channel-zap noise burst */
-@keyframes noiseShift {
-  0% {
-    background-position: 0 0, 0 0;
-  }
-  100% {
-    background-position: 2px 1px, 1px 2px;
-  }
-}
