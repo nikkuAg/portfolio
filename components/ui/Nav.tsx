@@ -154,12 +154,11 @@ export function Nav() {
                   </a>
                 </li>
               ))}
-              <li className="mt-8 flex items-center justify-between font-mono text-[11px] uppercase tracking-widest text-muted">
+              <li className="mt-8 flex items-center font-mono text-[11px] uppercase tracking-widest text-muted">
                 <span className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-accent animate-pulse" />
                   {time} IST
                 </span>
-                <span>Available · Q3</span>
               </li>
             </motion.ul>
           </motion.div>

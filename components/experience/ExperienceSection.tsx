@@ -9,13 +9,19 @@ import {
 } from "@/content/experience";
 
 // chronological — oldest leftmost on the path, character walks toward present
-const ORDERED: ExperienceItem[] = [...experience].reverse();
+const ORDEACCENT: ExperienceItem[] = [...experience].reverse();
 
 export function ExperienceSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  // pathRef is the geometry source used for position math (kept invisible).
+  // drawnPathRef is the bright accent "freshly chalked" overlay whose
+  // stroke-dashoffset shrinks with scroll, so the path appears to be
+  // drawn IN by the character as it walks.
   const pathRef = useRef<SVGPathElement>(null);
+  const drawnPathRef = useRef<SVGPathElement>(null);
   const characterRef = useRef<HTMLDivElement>(null);
+  const dustRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activeIdx, setActiveIdx] = useState(0);
   const [stage, setStage] = useState({ width: 1200, height: 360 });
@@ -50,8 +56,8 @@ export function ExperienceSection() {
     const usable = W - padX * 2;
     const baseY = H * 0.55;
     const amp = H * 0.22;
-    return ORDERED.map((role, i) => {
-      const t = ORDERED.length === 1 ? 0.5 : i / (ORDERED.length - 1);
+    return ORDEACCENT.map((role, i) => {
+      const t = ORDEACCENT.length === 1 ? 0.5 : i / (ORDEACCENT.length - 1);
       const x = padX + t * usable;
       // alternating wavy y — sin pattern with slight stagger so adjacent flags differ
       const phase = i * 0.95;
@@ -80,15 +86,36 @@ export function ExperienceSection() {
     return d;
   }, [flags, W, H]);
 
-  // drive character along the path from scroll progress
+  // drive character + chalk-drawing-in + dust trail from scroll progress
   useMotionValueEvent(scrollYProgress, "change", (latest) => {
     if (!pathRef.current || !characterRef.current) return;
     // clamp + ease scroll progress so the path completes a bit before scroll ends
     // (gives time to read the last role before the section unpins)
     const eased = Math.min(1, Math.max(0, (latest - 0.05) / 0.85));
     const length = pathRef.current.getTotalLength();
-    const point = pathRef.current.getPointAtLength(eased * length);
+    const charDist = eased * length;
+    const point = pathRef.current.getPointAtLength(charDist);
     characterRef.current.style.transform = `translate(${point.x}px, ${point.y}px) translate(-50%, -100%)`;
+
+    // chalk path "draws in" — bright stroke reveals from start
+    if (drawnPathRef.current) {
+      drawnPathRef.current.style.strokeDashoffset = String(length - charDist);
+    }
+
+    // dust trail — 3 small fading accent puffs lagging behind the character
+    // along the path itself (so they sit on the freshly drawn chalk line,
+    // not floating in space)
+    for (let i = 0; i < 3; i++) {
+      const el = dustRefs.current[i];
+      if (!el) continue;
+      const lagDist = (i + 1) * 14;
+      const dustAt = Math.max(0, charDist - lagDist);
+      const dp = pathRef.current.getPointAtLength(dustAt);
+      el.style.transform = `translate(${dp.x}px, ${dp.y}px) translate(-50%, -50%)`;
+      // dimmer + smaller the further back
+      const alpha = Math.max(0, 0.55 - i * 0.18);
+      el.style.opacity = charDist < 10 ? "0" : String(alpha);
+    }
 
     // active flag = the one closest to (and not after) the character's x
     let nearest = 0;
@@ -98,16 +125,21 @@ export function ExperienceSection() {
     setActiveIdx(nearest);
   });
 
-  // initial render — place character at start
+  // initial render — place character at start + init the drawn-path mask
   useEffect(() => {
     if (!pathRef.current || !characterRef.current) return;
     const length = pathRef.current.getTotalLength();
     const point = pathRef.current.getPointAtLength(0);
     characterRef.current.style.transform = `translate(${point.x}px, ${point.y}px) translate(-50%, -100%)`;
-    void length;
+    // set dasharray + dashoffset on the bright overlay so it's hidden
+    // initially and gets revealed by the scroll handler above
+    if (drawnPathRef.current) {
+      drawnPathRef.current.style.strokeDasharray = String(length);
+      drawnPathRef.current.style.strokeDashoffset = String(length);
+    }
   }, [pathD]);
 
-  const activeRole = ORDERED[activeIdx];
+  const activeRole = ORDEACCENT[activeIdx];
 
   return (
     <section
@@ -126,7 +158,7 @@ export function ExperienceSection() {
               03 / Experience
             </span>
             <span className="font-mono text-[10px] uppercase tracking-widest text-muted">
-              {ORDERED.length} roles
+              {ORDEACCENT.length} roles
             </span>
           </div>
 
@@ -220,7 +252,7 @@ export function ExperienceSection() {
             </span>
             <div className="flex items-center gap-3 font-mono text-xs uppercase tracking-widest text-muted">
               <span>
-                {String(activeIdx + 1).padStart(2, "0")} / {ORDERED.length}
+                {String(activeIdx + 1).padStart(2, "0")} / {ORDEACCENT.length}
               </span>
               <span className="text-muted/40">·</span>
               <span>scroll to walk →</span>
@@ -241,12 +273,16 @@ export function ExperienceSection() {
             {/* path stage */}
             <div
               ref={stageRef}
-              className="relative w-full h-[42vh] md:h-[46vh] min-h-[300px]"
+              className="relative w-full h-[40vh] md:h-[42vh] lg:h-[46vh] min-h-[300px]"
             >
               {/* sparse chalkboard noise */}
               <NoiseDots />
 
-              {/* chalk path */}
+              {/* chalk path — three layers stacked:
+                  1. soft glow underlay (the chalkboard "smudge" under the line)
+                  2. faint dashed template (the ahead/un-drawn portion)
+                  3. bright solid chalk that draws in with scroll
+                  pathRef is the invisible geometry source for position math */}
               <svg
                 width={W}
                 height={H}
@@ -254,31 +290,48 @@ export function ExperienceSection() {
               >
                 <defs>
                   <linearGradient id="path-grad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="rgba(245,245,245,0.2)" />
-                    <stop offset="100%" stopColor="rgba(200,255,61,0.45)" />
+                    <stop offset="0%" stopColor="rgba(200,255,61,0.55)" />
+                    <stop offset="100%" stopColor="rgba(200,255,61,0.95)" />
                   </linearGradient>
                 </defs>
-                {/* fuzzy underlay */}
+                {/* soft glow underlay */}
                 <path
                   d={pathD}
-                  stroke="rgba(245,245,245,0.06)"
-                  strokeWidth={9}
+                  stroke="rgba(245,245,245,0.05)"
+                  strokeWidth={10}
                   fill="none"
                   strokeLinecap="round"
                 />
-                {/* main chalk line */}
+                {/* faint dashed template — the path the character WILL walk */}
                 <path
                   ref={pathRef}
                   d={pathD}
-                  stroke="url(#path-grad)"
-                  strokeWidth={2}
+                  stroke="rgba(245,245,245,0.18)"
+                  strokeWidth={1.5}
                   fill="none"
                   strokeLinecap="round"
                   strokeDasharray="3 6"
                 />
+                {/* freshly chalked overlay — draws in via stroke-dashoffset
+                    (updated each scroll frame) so the path appears to be
+                    drawn by the character as it walks */}
+                <path
+                  ref={drawnPathRef}
+                  d={pathD}
+                  stroke="url(#path-grad)"
+                  strokeWidth={2.4}
+                  fill="none"
+                  strokeLinecap="round"
+                  style={{
+                    filter: "drop-shadow(0 0 3px rgba(200,255,61,0.55))",
+                  }}
+                />
               </svg>
 
-              {/* flags as HTML so they're crisp + interactive */}
+              {/* flags as HTML so they're crisp + interactive. Alternate
+                  label position above/below the pole so adjacent flags
+                  don't stack their labels into each other when the path
+                  clusters them horizontally. */}
               {flags.map((f, i) => (
                 <Flag
                   key={`${f.role.company}-${f.role.start}`}
@@ -288,7 +341,26 @@ export function ExperienceSection() {
                   reached={i <= activeIdx}
                   isCurrent={i === activeIdx}
                   index={i}
+                  labelPosition={i % 2 === 0 ? "above" : "below"}
                   onHover={() => setActiveIdx(i)}
+                />
+              ))}
+
+              {/* dust trail — small accent puffs trailing on the path */}
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  ref={(el) => {
+                    dustRefs.current[i] = el;
+                  }}
+                  aria-hidden
+                  className="absolute top-0 left-0 z-[15] pointer-events-none rounded-full bg-accent will-change-transform"
+                  style={{
+                    width: 4 - i,
+                    height: 4 - i,
+                    boxShadow: "0 0 6px rgba(200,255,61,0.6)",
+                    opacity: 0,
+                  }}
                 />
               ))}
 
@@ -300,6 +372,9 @@ export function ExperienceSection() {
                 <Character />
               </div>
 
+              {/* corner brackets — viewfinder treatment around the path stage */}
+              <StageCornerBrackets />
+
               {/* progress bar at bottom of stage */}
               <ScrollProgress progress={scrollYProgress} />
             </div>
@@ -309,7 +384,7 @@ export function ExperienceSection() {
               <ActiveRoleInfo
                 role={activeRole}
                 index={activeIdx + 1}
-                total={ORDERED.length}
+                total={ORDEACCENT.length}
               />
             </div>
           </div>
@@ -359,6 +434,14 @@ function Character() {
   );
 }
 
+// small glyph per role type — quick visual encoding inside the flag label
+const TYPE_GLYPH: Record<ExperienceType, string> = {
+  fulltime: "◆",
+  internship: "▸",
+  gsoc: "✦",
+  leadership: "▲",
+};
+
 function Flag({
   x,
   y,
@@ -366,6 +449,7 @@ function Flag({
   reached,
   isCurrent,
   index,
+  labelPosition,
   onHover,
 }: {
   x: number;
@@ -374,6 +458,7 @@ function Flag({
   reached: boolean;
   isCurrent: boolean;
   index: number;
+  labelPosition: "above" | "below";
   onHover: () => void;
 }) {
   // shorten company for the pole label
@@ -382,6 +467,34 @@ function Flag({
     .split(" ")
     .slice(0, 2)
     .join(" ");
+  const year = role.start.split(" ").pop();
+  const glyph = TYPE_GLYPH[role.type];
+
+  const labelColorClass = isCurrent
+    ? "text-accent scale-110"
+    : reached
+      ? "text-foreground/80"
+      : "text-muted/55";
+
+  // 2-line compact label — index + glyph + year on top, company on bottom
+  const label = (
+    <div
+      className={`text-center transition-all duration-300 ${labelColorClass} group-hover:text-accent`}
+    >
+      <div className="font-mono text-[9px] uppercase tracking-[0.18em] leading-none mb-1 flex items-center justify-center gap-1.5">
+        <span className="opacity-70">{String(index + 1).padStart(2, "0")}</span>
+        <span
+          className={isCurrent ? "text-accent" : reached ? "text-accent/80" : "text-muted/50"}
+        >
+          {glyph}
+        </span>
+        <span className="opacity-70">{year}</span>
+      </div>
+      <div className="font-mono text-[10.5px] font-bold whitespace-nowrap leading-tight">
+        {shortCompany}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -394,29 +507,15 @@ function Flag({
       onMouseEnter={onHover}
       onPointerDown={onHover}
     >
-      {/* invisible hover hitbox */}
-      <div className="absolute -inset-3 -bottom-6" />
+      {/* invisible hover hitbox that covers both pole and label slot */}
+      <div className="absolute -inset-x-4 -top-12 -bottom-16" />
 
-      {/* labels above pole */}
-      <div
-        className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 text-center transition-all duration-300 ${
-          isCurrent
-            ? "text-accent scale-110"
-            : reached
-              ? "text-foreground/80"
-              : "text-muted/60"
-        } group-hover:text-accent`}
-      >
-        <div className="font-mono text-[9px] uppercase tracking-widest leading-none mb-1">
-          {String(index + 1).padStart(2, "0")}
+      {/* label ABOVE pole (default) */}
+      {labelPosition === "above" && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5">
+          {label}
         </div>
-        <div className="font-mono text-[10px] font-bold whitespace-nowrap leading-tight">
-          {shortCompany}
-        </div>
-        <div className="font-mono text-[9px] tracking-wider whitespace-nowrap opacity-70">
-          {role.start.split(" ").pop()}
-        </div>
-      </div>
+      )}
 
       {/* pole + flag — drawn as SVG */}
       <svg
@@ -425,30 +524,50 @@ function Flag({
         className="overflow-visible"
         style={{ marginLeft: -1 }}
       >
+        {/* concentric pulse rings on the active flag — two staggered for
+            a slower, more deliberate "you are here" beacon */}
         {isCurrent && (
-          <circle
-            cx={1}
-            cy={36}
-            r={10}
-            fill="rgba(200,255,61,0.18)"
-            className="animate-ping"
-          />
+          <>
+            <circle
+              cx={1}
+              cy={36}
+              r={9}
+              fill="none"
+              stroke="rgba(200,255,61,0.55)"
+              strokeWidth={1}
+              className="animate-ping"
+            />
+            <circle
+              cx={1}
+              cy={36}
+              r={5}
+              fill="rgba(200,255,61,0.35)"
+            />
+          </>
         )}
         <line
           x1={1}
           y1={0}
           x2={1}
           y2={36}
-          stroke={
-            reached ? "#c8ff3d" : "rgba(245,245,245,0.45)"
-          }
+          stroke={reached ? "#c8ff3d" : "rgba(245,245,245,0.4)"}
           strokeWidth={1.6}
           className="transition-colors"
+          style={{
+            filter: reached
+              ? "drop-shadow(0 0 2px rgba(200,255,61,0.6))"
+              : undefined,
+          }}
         />
         <polygon
           points="1,0 22,5 1,12"
-          fill={reached ? "#c8ff3d" : "rgba(245,245,245,0.45)"}
+          fill={reached ? "#c8ff3d" : "rgba(245,245,245,0.4)"}
           className="transition-colors group-hover:fill-accent"
+          style={{
+            filter: reached
+              ? "drop-shadow(0 0 4px rgba(200,255,61,0.6))"
+              : undefined,
+          }}
         />
         {/* base nub */}
         <rect
@@ -456,9 +575,47 @@ function Flag({
           y={36}
           width={10}
           height={2.5}
-          fill={reached ? "#c8ff3d" : "rgba(245,245,245,0.45)"}
+          fill={reached ? "#c8ff3d" : "rgba(245,245,245,0.4)"}
         />
       </svg>
+
+      {/* label BELOW pole — appears under the path */}
+      {labelPosition === "below" && (
+        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2.5">
+          {label}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StageCornerBrackets() {
+  return (
+    <div aria-hidden className="absolute inset-0 pointer-events-none z-[5]">
+      {(["tl", "tr", "bl", "br"] as const).map((corner) => {
+        const isTop = corner[0] === "t";
+        const isLeft = corner[1] === "l";
+        return (
+          <span
+            key={corner}
+            className="absolute"
+            style={{
+              top: isTop ? 10 : "auto",
+              bottom: !isTop ? 10 : "auto",
+              left: isLeft ? 10 : "auto",
+              right: !isLeft ? 10 : "auto",
+              width: 14,
+              height: 14,
+              borderStyle: "solid",
+              borderColor: "rgba(200,255,61,0.4)",
+              borderTopWidth: isTop ? 1 : 0,
+              borderBottomWidth: !isTop ? 1 : 0,
+              borderLeftWidth: isLeft ? 1 : 0,
+              borderRightWidth: !isLeft ? 1 : 0,
+            }}
+          />
+        );
+      })}
     </div>
   );
 }

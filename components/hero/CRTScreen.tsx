@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import {
   autoPilotDir,
@@ -11,8 +11,13 @@ import {
   SnakeState,
   tickSnake,
 } from "./snake";
-import { renderHeroOverlay } from "./hero-overlay";
+import {
+  HERO_HINT_DESKTOP,
+  HERO_HINT_MOBILE,
+  renderHeroOverlay,
+} from "./hero-overlay";
 import { CRTScreenMaterial } from "./crtShader";
+import { setChannel, useChannel } from "./useChannel";
 
 const TEX_W = 768;
 const TEX_H = 576;
@@ -20,6 +25,12 @@ const TICK_MS = 130;
 const IDLE_MS = 6000;
 const TYPE_DURATION_MS = 3000;
 const FADE_DURATION_MS = 500;
+
+// channel 0 is the boot/intro screen (typewriter visible, snake hidden
+// behind it). Channel 1+ is "the TV is on" (snake live). The knob's first
+// turn (INTRO → GAME) is the discoverable play affordance.
+const INTRO_CHANNEL = 0;
+const GAME_CHANNEL = 1;
 
 export function CRTScreen() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
@@ -47,18 +58,37 @@ export function CRTScreen() {
   const lastInputRef = useRef(0);
   const idleRef = useRef(false);
 
-  // hero overlay state
-  const dismissedRef = useRef(false);
+  // hero overlay state — opacity is driven by channelRef (overlay visible
+  // while channel === INTRO_CHANNEL, fades out as soon as the user turns
+  // the knob to any other channel)
   const opacityRef = useRef(1);
   const startTimeRef = useRef<number | null>(null);
-  // hover-to-play is gated until the typewriter has finished — the screen
-  // has to "say its piece" before becoming interactive
+  // input gating — overlay must finish typing before any interaction lands
   const typeDoneRef = useRef(false);
+
+  // channel state synced to a ref so useFrame can read it without re-binding
+  const channel = useChannel();
+  const channelRef = useRef(channel);
+  channelRef.current = channel;
+
+  // compact / coarse-pointer devices show a different play hint inside the
+  // CRT overlay (D-pad instead of knob) — detected once on mount
+  const isCompactRef = useRef(false);
 
   useEffect(() => {
     const reduce = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    isCompactRef.current = window.matchMedia(
+      "(max-width: 768px), (pointer: coarse)",
+    ).matches;
+
+    // helper: when the user provides game input while still on the INTRO
+    // channel, advance the knob to GAME for them. That's what makes any
+    // input (keyboard / gamepad / knob) consistently equivalent to "play".
+    function ensureOnGameChannel() {
+      if (channelRef.current === INTRO_CHANNEL) setChannel(GAME_CHANNEL);
+    }
 
     function onKey(e: KeyboardEvent) {
       const k = e.key.toLowerCase();
@@ -75,11 +105,11 @@ export function CRTScreen() {
         "r",
       ].includes(k);
       if (!isGameKey) return;
+      if (!typeDoneRef.current) return; // wait for typewriter to finish
       e.preventDefault();
       lastInputRef.current = performance.now();
       idleRef.current = false;
-      // any game key intent dismisses the entry overlay
-      dismissedRef.current = true;
+      ensureOnGameChannel();
 
       if (k === " " || k === "r") {
         if (stateRef.current.gameOver) {
@@ -110,7 +140,8 @@ export function CRTScreen() {
     }
 
     // mobile / touch input via the on-screen MobileGamepad — same gating
-    // (typewriter must finish first) and same effects on game state
+    // (typewriter must finish first) and same "bump to GAME channel on
+    // first input" behaviour
     function onSnakeInput(e: Event) {
       if (!typeDoneRef.current) return;
       const detail = (e as CustomEvent<
@@ -119,7 +150,7 @@ export function CRTScreen() {
       >).detail;
       lastInputRef.current = performance.now();
       idleRef.current = false;
-      dismissedRef.current = true;
+      ensureOnGameChannel();
 
       if (detail.kind === "pause") {
         if (stateRef.current.gameOver) {
@@ -180,11 +211,14 @@ export function CRTScreen() {
     const typeProgress = Math.min(elapsed / TYPE_DURATION_MS, 1);
     if (typeProgress >= 1 && !typeDoneRef.current) {
       typeDoneRef.current = true;
-      // notify the touch gamepad it can fade in now
+      // notify the touch gamepad + knob hint that they can fade in now
       window.dispatchEvent(new CustomEvent("crt-typedone"));
     }
 
-    const targetOpacity = dismissedRef.current ? 0 : 1;
+    // overlay is visible iff the knob is on INTRO. Cycling back to channel
+    // 0 later re-shows the intro (fully typed, since typeProgress is capped
+    // at 1 — no re-animation needed).
+    const targetOpacity = channelRef.current === INTRO_CHANNEL ? 1 : 0;
     const fadeStep = Math.min(1, (delta * 1000) / FADE_DURATION_MS);
     opacityRef.current += (targetOpacity - opacityRef.current) * fadeStep;
 
@@ -201,6 +235,7 @@ export function CRTScreen() {
           canvas.width,
           canvas.height,
           now / 1000,
+          isCompactRef.current ? HERO_HINT_MOBILE : HERO_HINT_DESKTOP,
         );
       }
       texture.needsUpdate = true;
@@ -212,14 +247,10 @@ export function CRTScreen() {
     }
   });
 
-  function dismiss(e: ThreeEvent<PointerEvent>) {
-    e.stopPropagation();
-    if (!typeDoneRef.current) return;
-    dismissedRef.current = true;
-  }
-
   return (
-    <mesh position={[0, 0.06, 0.82]} onPointerOver={dismiss}>
+    // y=0.3 matches the screen well in CRTMonitor.tsx (asymmetric thin-bezel
+    // layout — screen lifted upward, wider chin below for the channel knob)
+    <mesh position={[0, 0.3, 0.82]}>
       <planeGeometry args={[3.05, 2.3]} />
       <cRTScreenMaterial
         ref={materialRef}

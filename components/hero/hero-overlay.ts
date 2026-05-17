@@ -4,9 +4,12 @@
 
 export const HERO_NAME = "DIVYANSH AGARWAL";
 export const HERO_TAGLINE = "Interfaces, services, and the wires between them.";
-export const HERO_HINT = "▸  HOVER  TO  PLAY";
+// hint text varies by input affordance — desktop has the bezel knob, mobile
+// has the on-screen MobileGamepad below the CRT
+export const HERO_HINT_DESKTOP = "▸  TURN  KNOB  TO  PLAY";
+export const HERO_HINT_MOBILE = "▸  TAP  D-PAD  TO  PLAY";
 
-const PHOSPHOR = "200,255,61"; // matches CRT lime
+const PHOSPHOR = "200,255,61"; // matches CRT accent
 
 export function renderHeroOverlay(
   ctx: CanvasRenderingContext2D,
@@ -15,6 +18,7 @@ export function renderHeroOverlay(
   w: number,
   h: number,
   time: number,
+  hint: string = HERO_HINT_DESKTOP,
 ) {
   if (opacity <= 0.005) return;
 
@@ -69,6 +73,6 @@ export function renderHeroOverlay(
     const hintAlpha = opacity * (0.45 + Math.sin(time * 2.5) * 0.25);
     ctx.fillStyle = `rgba(${PHOSPHOR},${Math.max(0, hintAlpha)})`;
     ctx.font = "500 13px monospace";
-    ctx.fillText(HERO_HINT, w / 2, h * 0.86);
+    ctx.fillText(hint, w / 2, h * 0.86);
   }
 }

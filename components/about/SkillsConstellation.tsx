@@ -339,10 +339,15 @@ export function SkillsConstellation() {
 
   return (
     <div className="relative w-full">
+      {/* MOBILE — the force-directed SVG can't fit 24 labels at 320px without
+          overlap. Show a grouped pill grid instead — same skills, dense + readable */}
+      <SkillsPillGrid />
+
+      {/* DESKTOP — interactive constellation */}
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="xMidYMid meet"
-        className="w-full h-[320px] sm:h-[400px] md:h-[460px] block"
+        className="hidden md:block w-full h-[460px]"
         role="img"
         aria-label="Skill constellation: TypeScript, React, Next.js, Tailwind, Framer Motion, GSAP, Three.js, React Three Fiber, WebGL, GLSL, Rapier, Unity, C#, Node.js, Vite, Figma"
       >
@@ -476,9 +481,78 @@ export function SkillsConstellation() {
       <div className="hidden md:block absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
         hover any node to follow its connections
       </div>
-      <div className="md:hidden absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
-        tap any node to follow its connections
-      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Mobile fallback — grouped pill grid (no SVG, no physics, no overflow)
+// ────────────────────────────────────────────────────────────────────────
+
+const GROUP_LABEL: Record<Group, string> = {
+  frontend: "Frontend",
+  game: "Games · 3D",
+  infra: "Backend · Infra",
+  tool: "Tools",
+};
+
+const GROUP_ACCENT: Record<Group, string> = {
+  frontend: "rgba(245,245,245,0.7)",
+  game: "#c8ff3d",
+  infra: "#7aa8ff",
+  tool: "rgba(156,156,156,0.8)",
+};
+
+const GROUP_ORDER: Group[] = ["frontend", "game", "infra", "tool"];
+
+function SkillsPillGrid() {
+  // bucket the same source data the SVG uses, so adding a skill once shows
+  // up in both places
+  const byGroup = useMemo(() => {
+    const map = new Map<Group, NodeDef[]>();
+    for (const g of GROUP_ORDER) map.set(g, []);
+    for (const n of NODES_DEF) map.get(n.group)?.push(n);
+    return map;
+  }, []);
+
+  return (
+    <div className="md:hidden space-y-5">
+      {GROUP_ORDER.map((g) => {
+        const items = byGroup.get(g) ?? [];
+        if (items.length === 0) return null;
+        const accent = GROUP_ACCENT[g];
+        return (
+          <div key={g}>
+            <div className="flex items-center gap-2 mb-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-muted">
+              <span
+                aria-hidden
+                className="size-1.5 rounded-full"
+                style={{ background: accent }}
+              />
+              <span>{GROUP_LABEL[g]}</span>
+              <span className="text-muted/40">·</span>
+              <span className="text-muted/60">{items.length}</span>
+            </div>
+            <ul className="flex flex-wrap gap-1.5">
+              {items.map((it) => (
+                <li
+                  key={it.id}
+                  className={`font-mono text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full border ${
+                    it.primary ? "text-foreground" : "text-muted"
+                  }`}
+                  style={{
+                    borderColor: it.primary
+                      ? "rgba(245,245,245,0.25)"
+                      : "var(--color-border)",
+                  }}
+                >
+                  {it.label}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
     </div>
   );
 }

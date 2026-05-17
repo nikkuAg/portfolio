@@ -258,7 +258,7 @@ export function Loader() {
               </div>
             </motion.div>
 
-            {/* thin lime hairline at the very bottom */}
+            {/* thin accent hairline at the very bottom */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: showContent ? 1 : 0 }}
@@ -299,7 +299,14 @@ export function Loader() {
 // Particle swarm — canvas-rendered phosphor dots driven by pct
 // ────────────────────────────────────────────────────────────────────────
 
-const PARTICLE_COUNT = 320;
+// halved on coarse-pointer / compact devices — 320 dots @ 60fps stutters on
+// iPhone SE-class hardware (A13, 2GB RAM). Resolved at module-eval time so
+// every code path uses the same count.
+const PARTICLE_COUNT =
+  typeof window !== "undefined" &&
+  window.matchMedia("(max-width: 768px), (pointer: coarse)").matches
+    ? 180
+    : 320;
 
 function ParticleSwarm({
   pct,
@@ -339,7 +346,7 @@ function ParticleSwarm({
       vx: number;
       vy: number;
       r: number;
-      hue: number; // 0 = lime, 1 = white sparkle
+      hue: number; // 0 = accent, 1 = white sparkle
       seed: number;
     };
     const particles: Particle[] = [];
@@ -472,7 +479,7 @@ function ParticleSwarm({
 // ────────────────────────────────────────────────────────────────────────
 
 function CornerBrackets() {
-  // 4 lime L-shaped marks at the screen corners. Sized in vw so they scale.
+  // 4 accent L-shaped marks at the screen corners. Sized in vw so they scale.
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none z-20">
       {(["tl", "tr", "bl", "br"] as const).map((corner) => {
@@ -518,14 +525,14 @@ function LeftHud({ pct }: { pct: number }) {
   }, []);
 
   // density readout — particles feel "active" as pct grows
-  const active = Math.floor((pct / 100) * 320);
+  const active = Math.floor((pct / 100) * PARTICLE_COUNT);
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, delay: 0.2 }}
-      className="hidden sm:flex absolute left-4 md:left-10 top-1/2 -translate-y-1/2 flex-col gap-7 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none"
+      className="hidden md:flex absolute left-4 md:left-10 top-1/2 -translate-y-1/2 flex-col gap-7 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none"
     >
       <HudReadout label="signal">
         <span className="text-foreground">{freq}</span>
@@ -537,7 +544,7 @@ function LeftHud({ pct }: { pct: number }) {
       </HudReadout>
       <HudReadout label="density">
         <span className="text-foreground">{String(active).padStart(3, "0")}</span>
-        <span className="text-muted/50"> / 320</span>
+        <span className="text-muted/50"> / {PARTICLE_COUNT}</span>
       </HudReadout>
       <HudReadout label="band">
         <span className="text-accent">phosphor</span>
@@ -558,7 +565,7 @@ function RightHud({ pct }: { pct: number }) {
       initial={{ opacity: 0, x: 8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, delay: 0.2 }}
-      className="hidden sm:flex absolute right-4 md:right-10 top-1/2 -translate-y-1/2 flex-col gap-6 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none w-[120px] md:w-[140px]"
+      className="hidden md:flex absolute right-4 md:right-10 top-1/2 -translate-y-1/2 flex-col gap-6 z-30 font-mono text-[10px] uppercase tracking-[0.25em] text-muted/80 pointer-events-none w-[120px] md:w-[140px]"
     >
       <HudBar label="lock" value={lock} />
       <HudBar label="focus" value={focus} />

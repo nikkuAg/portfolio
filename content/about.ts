@@ -4,7 +4,6 @@ export const about = {
   title: "Full-stack engineer",
   tagline: "Interfaces, services, and the wires between them.",
   location: "India",
-  available: true,
   education: {
     school: "IIT Roorkee",
     degree: "Int. MSc., Applied Mathematics",

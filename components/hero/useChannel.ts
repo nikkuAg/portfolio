@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { smoothScrollTo } from "@/lib/scroll";
 
+// CH·01 INTRO  → typewriter visible, snake hidden behind it (boot screen)
+// CH·02 GAME   → typewriter gone, snake live, no scroll
+// CH·03..      → snake stays, page scrolls to the named section
+//
+// First turn of the knob (INTRO → GAME) is what dismisses the boot overlay.
+// That makes the knob the discoverable play affordance — no hover needed.
 export const CHANNELS = [
+  { label: "INTRO", section: null },
   { label: "GAME", section: null },
   { label: "ABOUT", section: "about" },
   { label: "PROJECTS", section: "projects" },

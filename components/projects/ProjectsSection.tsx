@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AnimatePresence,
   motion,
@@ -12,25 +12,28 @@ import { projects, type Project } from "@/content/projects";
 const N = projects.length;
 
 const CATEGORY_LABEL: Record<Project["category"], string> = {
-  build: "Build",
-  game: "Game",
+  fullstack: "Full Stack",
+  backend: "Backend",
   research: "Research",
+  gamedev: "Game Dev",
 };
 
 // each category has its own phosphor — used for border, glow, gradient
 // tint, category label, and the centered title on the card face. Any
 // project may override these via its own `color` hex on Project.
 const CATEGORY_TINT: Record<Project["category"], string> = {
-  build: "#ff9b3d", // warm amber
-  game: "#c8ff3d", // phosphor lime
-  research: "#7aa8ff", // cool blue
+  fullstack: "#ff9b3d", // warm amber — the "builder" cluster
+  backend: "#7aa8ff", // cool blue — engineering / infra
+  research: "#b87aff", // violet — academic / sophisticated
+  gamedev: "#c8ff3d", // phosphor lime — playful
 };
 
 // rgb tuple form for rgba() — alpha varies per usage
 const CATEGORY_RGB: Record<Project["category"], string> = {
-  build: "255,155,61",
-  game: "200,255,61",
-  research: "122,168,255",
+  fullstack: "255,155,61",
+  backend: "122,168,255",
+  research: "184,122,255",
+  gamedev: "200,255,61",
 };
 
 // "#ff5dc8" → "255,93,200" — used to interpolate a per-project hex into
@@ -41,12 +44,32 @@ function hexToRgb(hex: string): string {
     ? h.split("").map((c) => c + c).join("")
     : h;
   const m = v.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  if (!m) return "200,255,61"; // safe fallback to lime
+  if (!m) return "200,255,61"; // safe fallback to accent
   return [
     parseInt(m[1], 16),
     parseInt(m[2], 16),
     parseInt(m[3], 16),
   ].join(",");
+}
+
+// pick black-vs-white text for a given tint, based on perceived brightness
+// (YIQ). Used on the Live button where the tint is the background — bright
+// tints (lime, yellow, amber) keep dark text, darker tints (blues, deep
+// violets) flip to white so the label stays readable.
+function textOnTint(hex: string): "dark" | "light" {
+  const h = hex.replace("#", "");
+  const v = h.length === 3
+    ? h.split("").map((c) => c + c).join("")
+    : h;
+  const m = v.match(/^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return "dark";
+  const r = parseInt(m[1], 16);
+  const g = parseInt(m[2], 16);
+  const b = parseInt(m[3], 16);
+  // YIQ perceived brightness on 0..255. 150 threshold puts the cool blues
+  // (#6096fc ≈ 145) on white text, keeps the warm/light hues on dark.
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 150 ? "dark" : "light";
 }
 
 // project's own `color` wins; otherwise fall back to its category's color
@@ -97,23 +120,26 @@ export function ProjectsSection() {
     <section
       ref={sectionRef}
       id="projects"
-      className="relative w-full thin-divider md:[height:360vh] [height:280vh]"
+      // tall on md+ for the desktop pinned card-deck animation. Mobile is
+      // auto height — the inner block is one viewport tall and snaps as one
+      // unit via the global mobile scroll-snap in globals.css.
+      className="relative w-full thin-divider md:[height:360vh]"
     >
-      <div className="sticky top-0 h-screen flex items-center px-4 sm:px-6 md:px-10 py-10 md:py-12 overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full flex flex-col gap-4 md:grid md:grid-cols-12 md:gap-12 md:items-start">
-          {/* LEFT (md+) / BOTTOM (mobile) — header + active project detail */}
-          <div className="order-2 md:order-1 md:col-span-5 flex flex-col gap-3 md:gap-6">
+      {/* DESKTOP — pinned-scroll deck (unchanged) */}
+      <div className="hidden md:flex sticky top-0 h-screen items-center px-4 sm:px-6 md:px-10 py-10 md:py-12 overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-12 gap-10 lg:gap-12 items-start">
+          <div className="col-span-5 lg:col-span-6 flex flex-col gap-6">
             <div className="flex items-baseline justify-between">
-              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-muted">
+              <span className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
                 02 / Projects
               </span>
-              <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-accent">
+              <span className="font-mono text-xs uppercase tracking-widest text-accent">
                 {String(topIdx + 1).padStart(2, "0")} /{" "}
                 {String(N).padStart(2, "0")}
               </span>
             </div>
 
-            <h2 className="hidden md:block font-serif text-3xl md:text-[2.6rem] leading-[0.95] tracking-tight">
+            <h2 className="font-serif text-3xl md:text-[2.6rem] leading-[0.95] tracking-tight">
               Things I&apos;ve <em className="italic">shipped</em>, broken, and
               rebuilt.
             </h2>
@@ -123,9 +149,8 @@ export function ProjectsSection() {
             <DeckProgress topIdx={topIdx} total={N} onJump={jumpTo} />
           </div>
 
-          {/* RIGHT (md+) / TOP (mobile) — deck */}
-          <div className="order-1 md:order-2 md:col-span-7 relative h-[36vh] sm:h-[44vh] md:h-[68vh] flex items-center justify-center">
-            <div className="relative w-[200px] sm:w-[260px] md:w-[360px] aspect-[4/5]">
+          <div className="col-span-7 lg:col-span-6 relative h-[68vh] flex items-center justify-center">
+            <div className="relative w-[320px] lg:w-[380px] aspect-[4/5]">
               {projects.map((p, i) => (
                 <DeckCard
                   key={p.slug}
@@ -137,7 +162,6 @@ export function ProjectsSection() {
                 />
               ))}
 
-              {/* deck shadow base */}
               <div
                 aria-hidden
                 className="absolute left-1/2 -translate-x-1/2 -bottom-6 w-[80%] h-3 rounded-full bg-black/60 blur-md"
@@ -147,7 +171,14 @@ export function ProjectsSection() {
         </div>
       </div>
 
-      {/* a11y / fallback */}
+      {/* MOBILE — section snaps into view as one block (via the global
+          mobile scroll-snap in globals.css). Inside, a horizontal swipe
+          carousel lets the user browse cards left/right. Scroll vertically
+          again to exit to Experience. */}
+      <div className="md:hidden">
+        <ProjectsMobileCarousel />
+      </div>
+
       <ul className="sr-only" aria-label="All projects (text list)">
         {projects.map((p) => (
           <li key={p.slug}>
@@ -168,6 +199,263 @@ export function ProjectsSection() {
         ))}
       </ul>
     </section>
+  );
+}
+
+function ProjectsMobileCarousel() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  // sync the header counter with whichever card the horizontal snap landed
+  // on. clientWidth is the carousel viewport width; scrollLeft / width gives
+  // the float index — round to land on the nearest card.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const w = el.clientWidth;
+        if (!w) return;
+        const idx = Math.round(el.scrollLeft / w);
+        setActiveIdx(Math.max(0, Math.min(N - 1, idx)));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  function jumpTo(i: number) {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  }
+
+  return (
+    // snap-start + min-h-screen makes the page-level mobile scroll-snap
+    // (defined in globals.css) land on this section as one block. User
+    // snaps in vertically → swipes horizontally to browse cards → scrolls
+    // vertically again to exit to Experience.
+    <div className="snap-start min-h-screen flex flex-col px-4 sm:px-6 pt-8 pb-6">
+      {/* header */}
+      <div className="flex items-baseline justify-between mb-4">
+        <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
+          02 / Projects
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
+          {String(activeIdx + 1).padStart(2, "0")} /{" "}
+          {String(N).padStart(2, "0")}
+        </span>
+      </div>
+
+      <h2 className="font-serif text-3xl sm:text-4xl leading-[0.95] tracking-tight mb-5">
+        Things I&apos;ve <em className="italic">shipped</em>, broken, and
+        rebuilt.
+      </h2>
+
+      {/* horizontal swipe carousel — flex-1 so it fills the vertical space
+          between the heading and the dots. Each card is full-viewport-width
+          (minus the section's horizontal padding). Native CSS scroll-snap
+          on the x axis handles per-card snap on swipe. */}
+      <div
+        ref={scrollRef}
+        className="flex-1 flex overflow-x-auto overflow-y-hidden snap-x snap-mandatory -mx-4 sm:-mx-6 px-4 sm:px-6 gap-4 scrollbar-hide"
+      >
+        {projects.map((p, i) => (
+          <div
+            key={p.slug}
+            className="w-full flex-shrink-0 snap-center flex"
+          >
+            <MobileProjectCard project={p} index={i} />
+          </div>
+        ))}
+      </div>
+
+      {/* page dots — tap to jump. Active dot grows wide + glows accent. */}
+      <div className="mt-4 flex items-center justify-center gap-2">
+        {projects.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => jumpTo(i)}
+            aria-label={`Go to project ${i + 1}`}
+            className="group relative h-8 flex items-center justify-center px-1"
+          >
+            <span
+              className={`block h-[3px] rounded-full transition-all duration-300 ${
+                i === activeIdx
+                  ? "w-7 bg-accent shadow-[0_0_8px_rgba(200,255,61,0.7)]"
+                  : i < activeIdx
+                    ? "w-2 bg-foreground/40"
+                    : "w-2 bg-border"
+              }`}
+            />
+          </button>
+        ))}
+      </div>
+
+      {/* swipe + exit hint */}
+      <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60">
+        ← swipe to browse · scroll ↓ to continue
+      </div>
+    </div>
+  );
+}
+
+function MobileProjectCard({
+  project,
+  index,
+}: {
+  project: Project;
+  index: number;
+}) {
+  const { tint, rgb } = resolveTint(project);
+  const hasLinks = Boolean(project.href || project.github);
+
+  return (
+    // h-full + flex makes the card fill the carousel's vertical space
+    // exactly, so the snapped projects section fits everything in one
+    // viewport (heading on top, card body in the middle, dots/hint at bottom)
+    <article
+      className="relative w-full h-full rounded-2xl overflow-hidden border bg-card flex flex-col"
+      style={{
+        borderColor: `rgba(${rgb}, 0.4)`,
+        boxShadow: `0 20px 50px -15px rgba(${rgb}, 0.22), 0 8px 20px rgba(0,0,0,0.45)`,
+      }}
+    >
+      {/* category-tinted gradient + dot grain */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(120% 80% at 0% 0%, rgba(${rgb},0.2), transparent 60%), radial-gradient(80% 60% at 100% 100%, rgba(${rgb},0.08), transparent 60%), linear-gradient(180deg, #0d0d0d 0%, #060606 100%)`,
+        }}
+      />
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundSize: "18px 18px",
+        }}
+      />
+
+      <div className="relative flex flex-col gap-4 p-6 sm:p-7 flex-1 overflow-y-auto">
+        {/* top row */}
+        <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-widest">
+          <span className="text-muted">
+            {String(index + 1).padStart(2, "0")} /{" "}
+            {String(N).padStart(2, "0")}
+          </span>
+          <span
+            style={{
+              color: tint,
+              textShadow: `0 0 8px rgba(${rgb}, 0.5)`,
+            }}
+          >
+            {CATEGORY_LABEL[project.category]}
+          </span>
+        </div>
+
+        {/* title — sized down vs desktop so long titles stay one line */}
+        <h3
+          className={`font-serif italic leading-[0.95] tracking-tight ${
+            project.title.length > 14
+              ? "text-[2rem]"
+              : project.title.length > 9
+                ? "text-4xl"
+                : "text-5xl"
+          }`}
+          style={{
+            color: tint,
+            textShadow: `0 0 22px rgba(${rgb}, 0.3), 0 0 4px rgba(${rgb}, 0.2)`,
+          }}
+        >
+          {project.title}
+        </h3>
+
+        {/* meta line */}
+        <div className="flex flex-wrap items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted">
+          <span className="text-foreground">{project.year}</span>
+          <span className="text-muted/40">·</span>
+          <span>{project.tech[0]}</span>
+          {project.playable && (
+            <>
+              <span className="text-muted/40">·</span>
+              <span className="text-accent">▶ Playable</span>
+            </>
+          )}
+        </div>
+
+        {/* tagline */}
+        <p className="font-serif text-lg text-foreground/85 leading-snug">
+          {project.tagline}
+        </p>
+
+        {/* full description — included on mobile (carousel cards have room) */}
+        <p className="text-sm text-muted leading-relaxed flex-1">
+          {project.description}
+        </p>
+
+        {/* tech tags */}
+        <ul className="flex flex-wrap gap-1.5">
+          {project.tech.slice(0, 6).map((t) => (
+            <li
+              key={t}
+              className="font-mono text-[10px] uppercase tracking-wider px-2 py-1 border border-border rounded-full text-muted"
+            >
+              {t}
+            </li>
+          ))}
+        </ul>
+
+        {/* links — 44px tall for thumb-friendly tap targets. Live uses the
+            project's tint as bg, Source uses tint on hover via a CSS var */}
+        {hasLinks && (
+          <div className="flex gap-2 mt-1">
+            {project.href && (
+              <a
+                href={project.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  backgroundColor: tint,
+                  color:
+                    textOnTint(tint) === "dark"
+                      ? "var(--color-background)"
+                      : "#ffffff",
+                }}
+                className="inline-flex items-center gap-2 px-4 h-11 rounded-full font-mono text-[11px] uppercase tracking-widest"
+              >
+                Live <span aria-hidden>↗</span>
+              </a>
+            )}
+            {project.github && (
+              <a
+                href={project.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ "--tint": tint } as React.CSSProperties}
+                className="inline-flex items-center gap-2 px-4 h-11 rounded-full border border-border font-mono text-[11px] uppercase tracking-widest text-foreground hover:[border-color:var(--tint)] hover:[color:var(--tint)] transition-colors"
+              >
+                Source <span aria-hidden>↗</span>
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* corner ticks, same as desktop card */}
+        <CornerTick className="top-3 left-3" sides="tl" rgb={rgb} />
+        <CornerTick className="top-3 right-3" sides="tr" rgb={rgb} />
+        <CornerTick className="bottom-3 left-3" sides="bl" rgb={rgb} />
+        <CornerTick className="bottom-3 right-3" sides="br" rgb={rgb} />
+      </div>
+    </article>
   );
 }
 
@@ -423,7 +711,14 @@ function ActiveProjectInfo({ project }: { project: Project }) {
                 href={project.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-accent text-background font-mono text-[10px] sm:text-[11px] uppercase tracking-widest hover:opacity-90 transition-opacity"
+                style={{
+                  backgroundColor: tint,
+                  color:
+                    textOnTint(tint) === "dark"
+                      ? "var(--color-background)"
+                      : "#ffffff",
+                }}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full font-mono text-[10px] sm:text-[11px] uppercase tracking-widest hover:opacity-90 transition-opacity"
               >
                 Live <span aria-hidden>↗</span>
               </a>
@@ -433,7 +728,8 @@ function ActiveProjectInfo({ project }: { project: Project }) {
                 href={project.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-foreground hover:border-accent hover:text-accent transition-colors"
+                style={{ "--tint": tint } as React.CSSProperties}
+                className="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-border font-mono text-[10px] sm:text-[11px] uppercase tracking-widest text-foreground hover:[border-color:var(--tint)] hover:[color:var(--tint)] transition-colors"
               >
                 Source <span aria-hidden>↗</span>
               </a>

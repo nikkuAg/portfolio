@@ -33,20 +33,42 @@ export function CRTScene() {
       style={{ background: "transparent" }}
     >
       <color attach="background" args={["#070707"]} />
-      <fog attach="fog" args={["#070707", 8, 18]} />
+      <fog attach="fog" args={["#070707", 9, 20]} />
 
-      {/* lights — fewer + cheaper on compact */}
-      <ambientLight intensity={compact ? 0.55 : 0.35} />
+      {/* lights — fewer + cheaper on compact. Ambient up a tick so the casing
+          edges read; key directional slightly brighter for shape definition */}
+      <ambientLight intensity={compact ? 0.6 : 0.42} />
       <directionalLight
         position={[3, 4, 5]}
-        intensity={0.9}
+        intensity={1.05}
         castShadow={!compact}
         shadow-mapSize={[compact ? 512 : 1024, compact ? 512 : 1024]}
       />
+      {/* back-rim lights — symmetric pair catches BOTH top edges of the
+          casing so the silhouette pops on every side, not just one. Left
+          rim is accent (brand cue), right rim is cool white (contrast). */}
+      <directionalLight
+        position={[-2, 3, -4]}
+        intensity={compact ? 0.55 : 0.9}
+        color="#c8ff3d"
+      />
+      <directionalLight
+        position={[2.5, 2.5, -4]}
+        intensity={compact ? 0.4 : 0.65}
+        color="#eaf0ff"
+      />
       {!compact && (
         <>
-          <pointLight position={[-4, 2, -2]} color="#7aa8ff" intensity={0.7} />
-          <pointLight position={[4, -1, 3]} color="#c8ff3d" intensity={0.25} />
+          <pointLight position={[-4, 2, -2]} color="#7aa8ff" intensity={0.8} />
+          <pointLight position={[4, -1, 3]} color="#c8ff3d" intensity={0.3} />
+          {/* low fill from below-front — gives the bottom of the casing /
+              stand a subtle highlight so the TV doesn't sink into the floor */}
+          <pointLight
+            position={[0, -2.5, 3]}
+            color="#ffffff"
+            intensity={0.35}
+            distance={6}
+          />
         </>
       )}
 
@@ -57,13 +79,14 @@ export function CRTScene() {
             casing from going totally flat without them. */}
         {!compact && (
           <>
-            <Environment preset="city" environmentIntensity={0.3} />
+            <Environment preset="city" environmentIntensity={0.35} />
             <ContactShadows
-              position={[0, -1.85, 0]}
-              opacity={0.55}
-              scale={8}
-              blur={2.6}
+              position={[0, -1.88, 0]}
+              opacity={0.78}
+              scale={9}
+              blur={2.2}
               far={3}
+              color="#000000"
             />
           </>
         )}

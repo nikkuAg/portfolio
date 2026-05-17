@@ -41,20 +41,22 @@ export function MobileGamepad() {
 
   return (
     <div
-      className={`md:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-500 ${
+      className={`md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-30 transition-opacity duration-500 ${
         active ? "opacity-100" : "opacity-0 pointer-events-none"
       }`}
       aria-hidden={!active}
     >
-      <div className="flex items-center gap-3 bg-card/85 backdrop-blur-md border border-border rounded-2xl p-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+      {/* sized so each face is ~52px (well above the 44px iOS thumb target),
+          with the D-pad at 168×168 and a generous pause column. */}
+      <div className="flex items-center gap-3 bg-card/85 backdrop-blur-md border border-border rounded-2xl p-3 shadow-[0_10px_28px_rgba(0,0,0,0.55)]">
         {/* D-pad */}
-        <div className="grid grid-cols-3 grid-rows-3 gap-1 w-[120px] h-[120px]">
+        <div className="grid grid-cols-3 grid-rows-3 gap-1.5 w-[168px] h-[168px]">
           <span />
           <Btn label="↑" onPress={() => press({ kind: "dir", dir: "up" })} />
           <span />
           <Btn label="←" onPress={() => press({ kind: "dir", dir: "left" })} />
           <span className="grid place-items-center">
-            <span className="size-1.5 rounded-full bg-accent/70" />
+            <span className="size-2 rounded-full bg-accent/70 shadow-[0_0_6px_rgba(200,255,61,0.6)]" />
           </span>
           <Btn label="→" onPress={() => press({ kind: "dir", dir: "right" })} />
           <span />
@@ -62,14 +64,15 @@ export function MobileGamepad() {
           <span />
         </div>
 
-        {/* pause / restart */}
+        {/* pause / restart — full-height column next to the D-pad */}
         <button
           type="button"
           onPointerDown={(e) => {
             e.preventDefault();
             press({ kind: "pause" });
           }}
-          className="w-12 h-[120px] rounded-xl border border-border bg-background/60 active:bg-accent/20 active:border-accent transition-colors font-mono text-[10px] uppercase tracking-widest text-muted active:text-accent flex items-center justify-center"
+          aria-label="Pause / restart"
+          className="w-14 h-[168px] rounded-xl border border-border bg-background/60 active:bg-accent/20 active:border-accent transition-colors font-mono text-xl text-foreground/85 active:text-accent flex items-center justify-center touch-manipulation"
         >
           ⏯
         </button>
@@ -93,7 +96,7 @@ function Btn({
         e.preventDefault();
         onPress();
       }}
-      className="rounded-md border border-border bg-background/60 active:bg-accent/20 active:border-accent transition-colors font-mono text-base text-foreground/85 active:text-accent grid place-items-center select-none touch-manipulation"
+      className="rounded-md border border-border bg-background/60 active:bg-accent/20 active:border-accent transition-colors font-mono text-xl text-foreground/85 active:text-accent grid place-items-center select-none touch-manipulation"
     >
       {label}
     </button>
