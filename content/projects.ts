@@ -42,7 +42,7 @@ export const projects: Project[] = [
     description:
       "A recruitment tool that streamlined the IMG evaluation process — 30% increase in candidate satisfaction. Real-time feedback channels for interviewers reduced post-interview deliberation, freeing the team to focus on high-potential candidates.",
     tech: ["React", "Django", "WebSockets"],
-    color: "#ff8c42",
+    color: "#9849ff",
   },
   {
     slug: "connect-e-dil",
