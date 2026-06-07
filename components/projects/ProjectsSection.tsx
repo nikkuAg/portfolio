@@ -640,19 +640,29 @@ function CornerTick({
 }
 
 function ActiveProjectInfo({ project }: { project: Project }) {
-  const { tint } = resolveTint(project);
-  const hasLinks = Boolean(project.href || project.github);
-
+  // keyed by slug so the body remounts on project change — that resets the
+  // details toggle to collapsed for free (no effect / ref reset needed)
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key={project.slug}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
-        className="flex flex-col gap-2 md:gap-3 mt-1 md:mt-2"
-      >
+      <ActiveProjectBody key={project.slug} project={project} />
+    </AnimatePresence>
+  );
+}
+
+function ActiveProjectBody({ project }: { project: Project }) {
+  const { tint } = resolveTint(project);
+  const hasLinks = Boolean(project.href || project.github);
+  // full description is opt-in so the panel stays compact by default
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.32, ease: [0.2, 0.8, 0.2, 1] }}
+      className="flex flex-col gap-2 md:gap-3 mt-1 md:mt-2"
+    >
         <div className="flex flex-wrap items-center gap-2 md:gap-3 font-mono text-[10px] uppercase tracking-widest">
           <span style={{ color: tint }}>
             {CATEGORY_LABEL[project.category]}
@@ -671,12 +681,37 @@ function ActiveProjectInfo({ project }: { project: Project }) {
           {project.title}
         </h3>
 
-        {/* one-line tagline — the dense full description was dropped from the
-            pinned panel to keep it to ~5 elements (it still lives on the
-            mobile cards + the sr-only list) */}
+        {/* one-line tagline — the dense full description is opt-in (toggle
+            below) so the panel stays at ~5 elements by default */}
         <p className="font-display text-base sm:text-lg md:text-xl text-foreground/85 leading-snug">
           {project.tagline}
         </p>
+
+        {/* details toggle — reveals the full description on demand */}
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          aria-expanded={showDetails}
+          className="group inline-flex w-fit items-center gap-1.5 font-mono text-[10px] uppercase tracking-widest text-muted hover:text-accent transition-colors"
+        >
+          <span className="text-accent">{showDetails ? "−" : "+"}</span>
+          {showDetails ? "Hide details" : "Details"}
+        </button>
+
+        <AnimatePresence initial={false}>
+          {showDetails && (
+            <motion.p
+              key="desc"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
+              className="overflow-hidden text-sm md:text-[15px] text-muted leading-relaxed"
+            >
+              {project.description}
+            </motion.p>
+          )}
+        </AnimatePresence>
 
         <ul className="flex flex-wrap gap-1.5 mt-1">
           {project.tech.slice(0, 4).map((t) => (
@@ -727,7 +762,6 @@ function ActiveProjectInfo({ project }: { project: Project }) {
           </div>
         )}
       </motion.div>
-    </AnimatePresence>
   );
 }
 
