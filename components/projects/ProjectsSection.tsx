@@ -134,10 +134,6 @@ export function ProjectsSection() {
               <span className="font-mono text-xs uppercase tracking-[0.3em] text-muted">
                 02 / Projects
               </span>
-              <span className="font-mono text-xs uppercase tracking-widest text-accent">
-                {String(topIdx + 1).padStart(2, "0")} /{" "}
-                {String(N).padStart(2, "0")}
-              </span>
             </div>
 
             <ActiveProjectInfo project={activeProject} />
@@ -241,10 +237,6 @@ function ProjectsMobileCarousel() {
       <div className="flex items-baseline justify-between mb-4">
         <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted">
           02 / Projects
-        </span>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-accent">
-          {String(activeIdx + 1).padStart(2, "0")} /{" "}
-          {String(N).padStart(2, "0")}
         </span>
       </div>
 

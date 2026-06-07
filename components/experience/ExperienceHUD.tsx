@@ -31,10 +31,6 @@ export function ExperienceHUD({
         <span className="font-mono text-[10px] md:text-xs uppercase tracking-[0.3em] text-muted">
           03 / Experience
         </span>
-        <span className="font-mono text-[10px] md:text-xs uppercase tracking-widest text-accent">
-          {String(activeIdx + 1).padStart(2, "0")} /{" "}
-          {String(roles.length).padStart(2, "0")}
-        </span>
       </div>
 
       <h2 className="font-display font-bold text-3xl md:text-5xl leading-[0.95] tracking-tight mt-2">
