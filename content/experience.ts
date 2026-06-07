@@ -42,7 +42,7 @@ const COMPANY_THEME: Record<string, { color?: string; logo?: string }> = {
     logo: "/logos/img.png",
   },
   "Lica World": { color: "#6dadfa" },
-  "Sugar Labs": { color: "#023ad4" },
+  "Sugar Labs": { color: "#023ad4", logo: "/logos/sugar-labs.png" },
   "Newton School": { color: "#0673f9", logo: "/logos/newton-school.png" },
 };
 
