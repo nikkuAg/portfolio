@@ -13,6 +13,14 @@ export type ExperienceItem = {
   type: ExperienceType;
   highlights: string[];
   stack: string[];
+  // optional per-company brand color (hex). Overrides the type-based tint
+  // for the 3D portal gradient, ticks, and crossing glow. Leave unset to
+  // fall back to the type color.
+  color?: string;
+  // optional company logo — a transparent-background PNG of a white /
+  // single-color silhouette in `public/logos/`. Rendered monochrome inside
+  // the portal, tinted to `color`. Falls back to no mark if missing.
+  logo?: string;
 };
 
 // chronological — newest first (resume convention)

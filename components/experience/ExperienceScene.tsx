@@ -250,7 +250,10 @@ function Gate({
   const ticksRef = useRef<THREE.Group>(null);
   const frameRef = useRef<THREE.Line>(null);
   const membraneRef = useRef<THREE.Mesh>(null);
-  const tint = TYPE_TINT[role.type];
+  // per-company brand color wins; otherwise the type-based tint. Drives the
+  // membrane gradient, ticks, crossing glow, and logo — the frame/brackets
+  // stay accent lime so the structure reads as one system.
+  const tint = role.color ?? TYPE_TINT[role.type];
   const dir = index % 2 === 0 ? 1 : -1;
 
   // faint white template outline + accent dashed chalk outline — the same
@@ -355,6 +358,10 @@ function Gate({
           normal blending so it never dominates the page */}
       <Membrane tint={tint} compact={compact} membraneRef={membraneRef} />
 
+      {/* company logo — monochrome, tinted to the brand color, floating on
+          the portal face. Silent no-op until a logo PNG is provided. */}
+      {role.logo && <GateLogo src={role.logo} tint={tint} />}
+
       <GateLabel role={role} index={index} tint={tint} />
     </group>
   );
@@ -446,6 +453,68 @@ function Membrane({
         toneMapped={false}
         depthWrite={false}
         side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+}
+
+// ── company logo — monochrome PNG on the portal face ─────────────────────
+// Loads via TextureLoader (not Suspense) so a missing file fails silently
+// to "no mark" instead of crashing the scene. Tinted to the brand color;
+// the source should be a transparent-bg white/single-color silhouette.
+function GateLogo({ src, tint }: { src: string; tint: string }) {
+  const [tex, setTex] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    new THREE.TextureLoader().load(
+      src,
+      (t) => {
+        if (disposed) {
+          t.dispose();
+          return;
+        }
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.anisotropy = 4;
+        setTex(t);
+      },
+      undefined,
+      () => {
+        /* logo missing — leave the portal mark-less */
+      },
+    );
+    return () => {
+      disposed = true;
+    };
+  }, [src]);
+
+  // fit the logo within a ~2-unit box, preserving its aspect ratio
+  const dims = useMemo(() => {
+    if (!tex?.image) return null;
+    const img = tex.image as { width: number; height: number };
+    const aspect = img.width / img.height || 1;
+    const MAX = 2;
+    let w = MAX;
+    let h = MAX / aspect;
+    if (h > MAX) {
+      h = MAX;
+      w = MAX * aspect;
+    }
+    return { w, h };
+  }, [tex]);
+
+  if (!tex || !dims) return null;
+
+  return (
+    <mesh position={[0, 0, 0.04]}>
+      <planeGeometry args={[dims.w, dims.h]} />
+      <meshBasicMaterial
+        map={tex}
+        color={tint}
+        transparent
+        opacity={0.92}
+        toneMapped={false}
+        depthWrite={false}
       />
     </mesh>
   );
