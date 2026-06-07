@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="DA">
+  
+  <mask id="daCutF" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120">
+    <rect width="120" height="120" fill="#000"></rect>
+    <path d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z" fill="#fff"></path>
+    <path d="M44 88V46L58 30L72 46V88M44 66H72" stroke="#000" stroke-width="7"></path>
+  </mask>
+  <path d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z" fill="#C8FF3D" mask="url(#daCutF)"></path>
+</svg>

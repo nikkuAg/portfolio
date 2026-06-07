@@ -73,9 +73,42 @@ export function Nav() {
               setOpen(false);
               smoothScrollTo("top");
             }}
-            className="font-serif text-xl md:text-2xl tracking-tight leading-none"
+            aria-label="Divyansh Agarwal — back to top"
+            className="block text-accent hover:text-foreground transition-colors duration-300"
           >
-            DA<span className="text-accent">.</span>
+            {/* DA mark — inlined (simple variant, no scanlines at this size)
+                so it inherits currentColor for the hover swap */}
+            <svg
+              viewBox="0 0 120 120"
+              className="size-8 md:size-9"
+              fill="none"
+              aria-hidden
+            >
+              <mask
+                id="daCutNav"
+                maskUnits="userSpaceOnUse"
+                x="0"
+                y="0"
+                width="120"
+                height="120"
+              >
+                <rect width="120" height="120" fill="#000" />
+                <path
+                  d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z"
+                  fill="#fff"
+                />
+                <path
+                  d="M44 88V46L58 30L72 46V88M44 66H72"
+                  stroke="#000"
+                  strokeWidth="7"
+                />
+              </mask>
+              <path
+                d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z"
+                fill="currentColor"
+                mask="url(#daCutNav)"
+              />
+            </svg>
           </a>
 
           {/* desktop nav */}

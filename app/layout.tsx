@@ -5,6 +5,13 @@ import { LenisProvider } from "@/components/providers/LenisProvider";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { Nav } from "@/components/ui/Nav";
 import { Loader } from "@/components/ui/Loader";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+  TWITTER_HANDLE,
+} from "@/lib/site";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,24 +31,66 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://divyansh.dev"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "Divyansh Agarwal · Full-stack engineer",
-    template: "%s · Divyansh Agarwal",
+    default: SITE_TITLE,
+    template: `%s · ${SITE_NAME}`,
   },
-  description:
-    "Divyansh Agarwal, full-stack engineer. Interfaces, services, and the wires between them.",
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "Divyansh Agarwal",
+    "full-stack engineer",
+    "software engineer",
+    "web developer",
+    "game developer",
+    "React",
+    "Next.js",
+    "TypeScript",
+    "Python",
+    "Go",
+    "portfolio",
+    "Bangalore",
+    "India",
+  ],
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  category: "technology",
+  alternates: {
+    canonical: "/",
+  },
+  icons: {
+    icon: [
+      { url: "/da-favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   openGraph: {
-    title: "Divyansh Agarwal · Full-stack engineer",
-    description:
-      "Interfaces, services, and the wires between them.",
     type: "website",
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "en_US",
+    title: SITE_TITLE,
+    description: "Interfaces, services, and the wires between them.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Divyansh Agarwal · Full-stack engineer",
-    description:
-      "Interfaces, services, and the wires between them.",
+    creator: TWITTER_HANDLE,
+    title: SITE_TITLE,
+    description: "Interfaces, services, and the wires between them.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
 };
 

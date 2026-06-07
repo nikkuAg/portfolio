@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-labelledby="da-title">
+  <title id="da-title">DA — Divyansh Agarwal</title>
+  
+  <mask id="daCut" maskUnits="userSpaceOnUse" x="0" y="0" width="120" height="120">
+    <rect width="120" height="120" fill="#000"></rect>
+    
+    <path d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z" fill="#fff"></path>
+    
+    <path d="M44 88V46L58 30L72 46V88M44 66H72" stroke="#000" stroke-width="7"></path>
+    
+    <path d="M32 26H88M32 33H88M32 40H88M32 47H88M32 54H88M32 61H88M32 68H88M32 75H88M32 82H88M32 89H88M32 96H88" stroke="#000" stroke-width="1.3"></path>
+  </mask>
+  <path d="M32 20H58Q88 20 88 60Q88 100 58 100H32Z" fill="currentColor" mask="url(#daCut)"></path>
+</svg>
