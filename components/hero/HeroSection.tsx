@@ -105,14 +105,7 @@ function DesktopHero() {
         <div className="flex-1" />
 
         {/* bottom row */}
-        <div className="flex items-end justify-between gap-6">
-          <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted max-w-xs leading-relaxed">
-            <span className="text-foreground">Controls</span>
-            <span>
-              {" "}· Turn the knob to play · Arrows/WASD to steer · Space pause
-            </span>
-          </div>
-
+        <div className="flex items-end justify-end gap-6">
           <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted text-right">
             <span className="block text-foreground">{about.title}</span>
             <span className="italic">{about.tagline}</span>
@@ -289,7 +282,6 @@ function MobileHero() {
           }`}
         >
           <span className="text-accent text-base animate-bounce">↓</span>
-          <span>scroll to explore</span>
         </div>
       </div>
     </section>

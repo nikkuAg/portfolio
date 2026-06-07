@@ -11,7 +11,7 @@ export const about = {
   },
   bio: [
     "I'm a full-stack engineer. Most days that means building interfaces I'd want to use, the services that power them, and the infrastructure they run on.",
-    "I work most often in TypeScript, Python, and Go — across React/Next on the frontend, Django/Node on the backend, and Airflow/AWS for the data and infra plumbing in between. I've shipped at Finrep, Athleo, Aspora (Vance, YC W22), Wildcard, BNY Mellon, and twice with Google Summer of Code.",
+    "I work most often in TypeScript, Python, and Go, across React/Next on the frontend, Django/Node on the backend, and Airflow/AWS for the data and infra plumbing in between. I've shipped at Finrep, Athleo, Aspora (Vance, YC W22), Wildcard, BNY Mellon, and twice with Google Summer of Code.",
     "On the side: small games (Unity, C#), interactive math toys, and the occasional shader. The places where frontend meets game development are where I'm happiest.",
   ],
   skills: [

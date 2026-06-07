@@ -182,7 +182,7 @@ export function ContactSection() {
           <span className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-accent flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-accent shadow-[0_0_8px_rgba(200,255,61,0.8)] animate-pulse" />
             Inbox Open <span className="text-muted/60">·</span>{" "}
-            <span className="text-muted">{time || "—"} IST</span>
+            <span className="text-muted">{time || "--:--"} IST</span>
           </span>
         </div>
 
@@ -312,7 +312,7 @@ export function ContactSection() {
               }
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              — Divyansh
+              Divyansh
             </motion.span>
             <svg
               aria-hidden

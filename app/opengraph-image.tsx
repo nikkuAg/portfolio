@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 export const alt =
-  "Divyansh Agarwal — Full-stack engineer. Interfaces, services, and the wires between them.";
+  "Divyansh Agarwal · Full-stack engineer. Interfaces, services, and the wires between them.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

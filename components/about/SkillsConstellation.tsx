@@ -478,9 +478,6 @@ export function SkillsConstellation() {
         </g>
       </svg>
 
-      <div className="hidden md:block absolute bottom-1 left-0 right-0 text-center pointer-events-none font-mono text-[9px] uppercase tracking-widest text-muted/60">
-        hover any node to follow its connections
-      </div>
     </div>
   );
 }

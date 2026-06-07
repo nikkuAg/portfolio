@@ -22,7 +22,7 @@ export const experience: ExperienceItem[] = [
     role: "Full Stack Engineer",
     start: "Nov 2025",
     end: "Present",
-    location: "Remote",
+    location: "Bangalore, India",
     type: "fulltime",
     highlights: [
       "Building core product as one of the early engineers on a fintech AI platform.",
@@ -83,7 +83,7 @@ export const experience: ExperienceItem[] = [
   },
   {
     company: "Learning Equality",
-    role: "Contributor — Google Summer of Code 2024",
+    role: "Contributor, Google Summer of Code 2024",
     start: "May 2024",
     end: "Sep 2024",
     location: "Remote",
@@ -134,7 +134,7 @@ export const experience: ExperienceItem[] = [
   },
   {
     company: "Sugar Labs",
-    role: "Contributor — Google Summer of Code 2022",
+    role: "Contributor, Google Summer of Code 2022",
     start: "Jun 2022",
     end: "Sep 2022",
     location: "Remote",

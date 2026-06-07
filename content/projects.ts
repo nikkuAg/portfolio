@@ -40,7 +40,7 @@ export const projects: Project[] = [
     year: "2024",
     tagline: "Real-time recruitment evaluation tool.",
     description:
-      "A recruitment tool that streamlined the IMG evaluation process — 30% increase in candidate satisfaction. Real-time feedback channels for interviewers reduced post-interview deliberation, freeing the team to focus on high-potential candidates.",
+      "A recruitment tool that streamlined the IMG evaluation process, with a 30% increase in candidate satisfaction. Real-time feedback channels for interviewers reduced post-interview deliberation, freeing the team to focus on high-potential candidates.",
     tech: ["React", "Django", "WebSockets"],
     color: "#9849ff",
   },
@@ -51,7 +51,7 @@ export const projects: Project[] = [
     year: "2023",
     tagline: "Valentine's week social app for IIT Roorkee.",
     description:
-      "A campus app for IIT Roorkee Valentine's week — virtual date invitations, digital roses, and a recommendation feature that analyses user inputs to suggest matches.",
+      "A campus app for IIT Roorkee Valentine's week: virtual date invitations, digital roses, and a recommendation feature that analyses user inputs to suggest matches.",
     tech: ["Django", "React", "Redis", "PostgreSQL"],
     color: "#ff7687",
   },
@@ -96,7 +96,7 @@ export const projects: Project[] = [
     year: "2021",
     tagline: "Sea-fantasy treasure hunt for Android & Windows, built in Godot.",
     description:
-      "A Desire of Treasure — a 2D treasure-hunt set in a sea-fantasy world. Find the map, fight creatures, and collect the key to a very precious treasure. Includes a shop for armor/weapon upgrades, power-ups, and a catalogue of enemies and corals. Released for both Android and Windows, with a YouTube trailer.",
+      "A Desire of Treasure, a 2D treasure-hunt set in a sea-fantasy world. Find the map, fight creatures, and collect the key to a very precious treasure. Includes a shop for armor/weapon upgrades, power-ups, and a catalogue of enemies and corals. Released for both Android and Windows, with a YouTube trailer.",
     tech: ["Godot", "GDScript", "Android", "Windows"],
     playable: true,
     github: "https://github.com/nikkuAg/A-DOT",

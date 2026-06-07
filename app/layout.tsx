@@ -26,20 +26,20 @@ const instrumentSerif = Instrument_Serif({
 export const metadata: Metadata = {
   metadataBase: new URL("https://divyansh.dev"),
   title: {
-    default: "Divyansh Agarwal — Full-stack engineer",
+    default: "Divyansh Agarwal · Full-stack engineer",
     template: "%s · Divyansh Agarwal",
   },
   description:
-    "Divyansh Agarwal — full-stack engineer. Interfaces, services, and the wires between them.",
+    "Divyansh Agarwal, full-stack engineer. Interfaces, services, and the wires between them.",
   openGraph: {
-    title: "Divyansh Agarwal — Full-stack engineer",
+    title: "Divyansh Agarwal · Full-stack engineer",
     description:
       "Interfaces, services, and the wires between them.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Divyansh Agarwal — Full-stack engineer",
+    title: "Divyansh Agarwal · Full-stack engineer",
     description:
       "Interfaces, services, and the wires between them.",
   },
