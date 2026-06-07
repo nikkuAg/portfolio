@@ -8,6 +8,7 @@ import {
   useScroll,
 } from "motion/react";
 import { projects, type Project } from "@/content/projects";
+import { useScrollSnap } from "@/lib/useScrollSnap";
 
 const N = projects.length;
 
@@ -102,19 +103,19 @@ export function ProjectsSection() {
   const topIdx = Math.min(N - 1, Math.max(0, Math.floor(deckPos + 0.3)));
   const activeProject = projects[topIdx];
 
-  function jumpTo(targetIdx: number) {
-    const section = sectionRef.current;
-    if (!section) return;
-    const rect = section.getBoundingClientRect();
-    const sectionTop = window.scrollY + rect.top;
-    const sectionScroll = section.offsetHeight - window.innerHeight;
-    const e = N === 1 ? 0 : targetIdx / (N - 1);
-    const latest = e * 0.84 + 0.07;
-    window.scrollTo({
-      top: sectionTop + latest * sectionScroll,
-      behavior: "smooth",
-    });
-  }
+  // snap-to-card — when scrolling pauses mid-transition inside the pinned
+  // range, glide to the nearest whole card so the deck never rests with a
+  // card half-flung and the detail panel out of sync. Desktop only (the
+  // mobile carousel has its own native CSS snap). jumpTo also powers the
+  // deck progress bar + click-a-card-behind.
+  const { jumpTo } = useScrollSnap({
+    scrollYProgress,
+    sectionRef,
+    steps: N,
+    leadIn: 0.07,
+    span: 0.84,
+    enabled: () => window.matchMedia("(min-width: 768px)").matches,
+  });
 
   return (
     <section
@@ -182,7 +183,7 @@ export function ProjectsSection() {
       <ul className="sr-only" aria-label="All projects (text list)">
         {projects.map((p) => (
           <li key={p.slug}>
-            {p.title} — {p.tagline}
+            {p.title}: {p.tagline}
             {p.href && (
               <>
                 {" · "}
@@ -298,10 +299,6 @@ function ProjectsMobileCarousel() {
         ))}
       </div>
 
-      {/* swipe + exit hint */}
-      <div className="mt-2 text-center font-mono text-[10px] uppercase tracking-[0.3em] text-muted/60">
-        ← swipe to browse · scroll ↓ to continue
-      </div>
     </div>
   );
 }
