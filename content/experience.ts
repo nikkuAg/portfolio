@@ -23,8 +23,28 @@ export type ExperienceItem = {
   logo?: string;
 };
 
+// per-company brand identity (colors + logos sourced via Brandfetch).
+// `color` tints each portal gate's gradient/glow; `logo` (white-silhouette
+// PNG in public/logos/) renders monochrome inside the portal. Keyed by the
+// exact `company` string and merged in below — companies absent here keep
+// the default type tint and show no logo.
+const COMPANY_THEME: Record<string, { color?: string; logo?: string }> = {
+  "Finrep.ai": { color: "#10a175" },
+  "Athleo.ai": { color: "#d96c1a" },
+  Aspora: { color: "#5523b2", logo: "/logos/aspora.png" },
+  "Learning Equality": {
+    color: "#ffcb00",
+    logo: "/logos/learning-equality.png",
+  },
+  "BNY Mellon": { color: "#2b9cae", logo: "/logos/bny.png" },
+  "Information Management Group, IIT Roorkee": { color: "#009dff" },
+  "Lica World": { color: "#6dadfa" },
+  "Sugar Labs": { color: "#023ad4" },
+  "Newton School": { color: "#0673f9", logo: "/logos/newton-school.png" },
+};
+
 // chronological — newest first (resume convention)
-export const experience: ExperienceItem[] = [
+const baseExperience: ExperienceItem[] = [
   {
     company: "Finrep.ai",
     role: "Full Stack Engineer",
@@ -167,3 +187,9 @@ export const experience: ExperienceItem[] = [
     stack: ["React", "Django", "Python"],
   },
 ];
+
+// merge brand theme onto each role by company name
+export const experience: ExperienceItem[] = baseExperience.map((role) => ({
+  ...role,
+  ...COMPANY_THEME[role.company],
+}));

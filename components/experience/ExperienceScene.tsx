@@ -358,9 +358,9 @@ function Gate({
           normal blending so it never dominates the page */}
       <Membrane tint={tint} compact={compact} membraneRef={membraneRef} />
 
-      {/* company logo — monochrome, tinted to the brand color, floating on
+      {/* company logo — white silhouette on the brand-color gradient, on
           the portal face. Silent no-op until a logo PNG is provided. */}
-      {role.logo && <GateLogo src={role.logo} tint={tint} />}
+      {role.logo && <GateLogo src={role.logo} />}
 
       <GateLabel role={role} index={index} tint={tint} />
     </group>
@@ -462,7 +462,7 @@ function Membrane({
 // Loads via TextureLoader (not Suspense) so a missing file fails silently
 // to "no mark" instead of crashing the scene. Tinted to the brand color;
 // the source should be a transparent-bg white/single-color silhouette.
-function GateLogo({ src, tint }: { src: string; tint: string }) {
+function GateLogo({ src }: { src: string }) {
   const [tex, setTex] = useState<THREE.Texture | null>(null);
 
   useEffect(() => {
@@ -510,7 +510,7 @@ function GateLogo({ src, tint }: { src: string; tint: string }) {
       <planeGeometry args={[dims.w, dims.h]} />
       <meshBasicMaterial
         map={tex}
-        color={tint}
+        color={CHALK}
         transparent
         opacity={0.92}
         toneMapped={false}
