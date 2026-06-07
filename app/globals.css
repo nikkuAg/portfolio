@@ -204,6 +204,26 @@ html.lenis body {
   }
 }
 
+/* contact-section arcade blink — hard on/off (steps, not a fade), the
+   classic "INSERT COIN" cadence */
+@keyframes arcade-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+.arcade-blink {
+  animation: arcade-blink 1.2s steps(2, jump-none) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arcade-blink {
+    animation: none !important;
+  }
+}
+
 /* contact-section marquee — endless horizontal scroll, content is duplicated
    in markup so the -50% translate produces a seamless loop */
 @keyframes contact-marquee {

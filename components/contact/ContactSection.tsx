@@ -15,9 +15,10 @@ const RESUME_HREF =
 const HEADING_WORDS = ["Let's", "build", "something", "good."];
 
 const MARQUEE_PHRASES = [
-  "Let's build something good",
-  "DM open",
-  "Interfaces · Services · Wires",
+  "End of broadcast",
+  "Thanks for tuning in",
+  "DM open · reply < 24h",
+  "Transmission continues on CH·01–05",
 ];
 
 // per-word slide-up from below a clip mask — Olivier-Larose / award-portfolio
@@ -34,8 +35,8 @@ const wordReveal: Variants = {
   }),
 };
 
-// gentle stagger for the things that follow the heading — primary action,
-// metadata row, sign-off row. Delay anchored after the heading words finish.
+// gentle stagger for the things that follow the heading — continue row,
+// high-score table, player stats. Delay anchored after the heading words.
 const fadeUp: Variants = {
   hidden: { y: 14, opacity: 0 },
   visible: (i: number) => ({
@@ -45,11 +46,6 @@ const fadeUp: Variants = {
   }),
 };
 
-// letter-scramble pool for the email hover — letters cycle through this set
-// then settle into the real address. @ and . are preserved so the scramble
-// still reads as "an email" mid-animation
-const SCRAMBLE_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789#$%&*";
-
 export function ContactSection() {
   const [time, setTime] = useState("");
 
@@ -58,42 +54,6 @@ export function ContactSection() {
 
   const sigWrapRef = useRef<HTMLDivElement>(null);
   const sigInView = useInView(sigWrapRef, { once: true, margin: "-15%" });
-
-  // email letter-scramble — driven by rAF so we don't pile up React updates,
-  // bails out if the user mouses out (resets to clean target)
-  const [scrambled, setScrambled] = useState(EMAIL);
-  const scrambleRafRef = useRef<number | null>(null);
-  const startScramble = () => {
-    if (scrambleRafRef.current) cancelAnimationFrame(scrambleRafRef.current);
-    const startTime = performance.now();
-    const duration = 650;
-    const step = () => {
-      const t = Math.min(1, (performance.now() - startTime) / duration);
-      const reveal = Math.floor(EMAIL.length * t);
-      let out = "";
-      for (let i = 0; i < EMAIL.length; i++) {
-        const c = EMAIL[i];
-        if (i < reveal || c === "@" || c === ".") {
-          out += c;
-        } else {
-          out +=
-            SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
-        }
-      }
-      setScrambled(out);
-      if (t < 1) {
-        scrambleRafRef.current = requestAnimationFrame(step);
-      } else {
-        scrambleRafRef.current = null;
-      }
-    };
-    scrambleRafRef.current = requestAnimationFrame(step);
-  };
-  const resetScramble = () => {
-    if (scrambleRafRef.current) cancelAnimationFrame(scrambleRafRef.current);
-    scrambleRafRef.current = null;
-    setScrambled(EMAIL);
-  };
 
   // magnetic pull on the email — the wrapping zone is bigger than the anchor
   // (negative margin reclaim) so the cursor "catches" before reaching the
@@ -145,15 +105,18 @@ export function ContactSection() {
     return () => clearInterval(id);
   }, []);
 
-  // cleanup any in-flight scramble on unmount
-  useEffect(
-    () => () => {
-      if (scrambleRafRef.current) cancelAnimationFrame(scrambleRafRef.current);
-    },
-    [],
-  );
-
+  // high-score table — socials (minus email, which is the press-start CTA)
+  // with the resume slotted in, then the YOU easter-egg row
   const elsewhere = socials.filter((s) => s.label !== "Email");
+  const scoreRows: {
+    label: string;
+    handle: string;
+    href: string;
+    download?: boolean;
+  }[] = [
+    ...elsewhere.map((s) => ({ label: s.label, handle: s.handle, href: s.href })),
+    { label: "Resume", handle: ".pdf", href: RESUME_HREF, download: true },
+  ];
 
   return (
     <section
@@ -174,8 +137,12 @@ export function ContactSection() {
         ref={wrapRef}
         className="relative max-w-7xl mx-auto pb-16 sm:pb-20"
       >
+        {/* viewfinder corner brackets — the arcade screen reads as one unit,
+            same treatment as the experience stage */}
+        <ScreenCornerBrackets />
+
         {/* eyebrow — live IST time folded into the status pill */}
-        <div className="flex items-baseline justify-between mb-12 sm:mb-16 gap-4">
+        <div className="flex items-baseline justify-between mb-10 sm:mb-14 gap-4">
           <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-muted">
             04 / Contact
           </span>
@@ -185,6 +152,20 @@ export function ContactSection() {
             <span className="text-muted">{time || "--:--"} IST</span>
           </span>
         </div>
+
+        {/* RUN COMPLETE banner — the page was the game, this is the end card */}
+        <motion.div
+          className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-8"
+          initial={{ opacity: 0 }}
+          animate={wrapInView ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <span aria-hidden className="h-px flex-1 max-w-24 sm:max-w-40 bg-gradient-to-r from-transparent to-accent/50" />
+          <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.4em] text-accent text-glow">
+            Run Complete
+          </span>
+          <span aria-hidden className="h-px flex-1 bg-gradient-to-l from-transparent to-accent/50" />
+        </motion.div>
 
         {/* editorial heading — each word wipes up from a clip mask. The
             italic "something" word keeps its accent phosphor styling. */}
@@ -224,23 +205,19 @@ export function ContactSection() {
           ))}
         </h2>
 
-        {/* primary action: magnetic email + letter-scramble on hover */}
+        {/* press-start email */}
         <motion.div
-          className="mt-10 sm:mt-14 flex flex-col gap-6 sm:gap-7"
+          className="mt-10 sm:mt-14 flex flex-col gap-5 sm:gap-6"
           custom={0}
           variants={fadeUp}
           initial="hidden"
           animate={wrapInView ? "visible" : "hidden"}
         >
-          <div
-            ref={magnetZoneRef}
-            className="-m-6 p-6 w-fit max-w-full"
-          >
+          {/* primary action: magnetic email (plain text — no scramble) */}
+          <div ref={magnetZoneRef} className="-m-6 p-6 w-fit max-w-full">
             <a
               ref={magnetTargetRef}
               href={`mailto:${EMAIL}`}
-              onMouseEnter={startScramble}
-              onMouseLeave={resetScramble}
               className="group relative inline-flex items-baseline gap-3 sm:gap-5 font-serif italic text-foreground hover:text-accent w-fit max-w-full break-all will-change-transform"
               style={{
                 fontSize: "clamp(1.25rem, 4.5vw, 3rem)",
@@ -250,7 +227,7 @@ export function ContactSection() {
                   "transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s",
               }}
             >
-              <span className="tabular-nums">{scrambled}</span>
+              <span>{EMAIL}</span>
               <span
                 aria-hidden
                 className="inline-block text-accent transition-transform group-hover:translate-x-1 group-hover:-translate-y-1"
@@ -265,42 +242,103 @@ export function ContactSection() {
               />
             </a>
           </div>
+        </motion.div>
 
-          {/* secondary row — resume pill + ambient metadata */}
-          <motion.div
-            className="flex flex-wrap items-center gap-x-4 sm:gap-x-5 gap-y-3 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-muted"
-            custom={1}
-            variants={fadeUp}
-            initial="hidden"
-            animate={wrapInView ? "visible" : "hidden"}
-          >
-            <a
-              href={RESUME_HREF}
-              target="_blank"
-              rel="noopener noreferrer"
-              download
-              className="group inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border hover:border-accent/60 hover:text-foreground transition-colors"
-            >
-              <span className="text-accent inline-block transition-transform duration-300 group-hover:translate-y-0.5">
-                ↓
-              </span>
-              <span>Resume</span>
-              <span className="text-muted/50 normal-case tracking-normal">
-                pdf
-              </span>
-            </a>
-            <span className="text-muted/40">·</span>
-            <span>India · UTC+5:30</span>
-            <span className="text-muted/40">·</span>
-            <span>Reply &lt; 24h</span>
-          </motion.div>
+        {/* OTHER CHANNELS — socials as a channel list, picking up the
+            hero TV's CH·01 motif (each link = a channel you can reach me on) */}
+        <motion.div
+          className="mt-14 sm:mt-20 max-w-2xl"
+          custom={1}
+          variants={fadeUp}
+          initial="hidden"
+          animate={wrapInView ? "visible" : "hidden"}
+        >
+          <div className="flex items-center gap-4 mb-4 sm:mb-5">
+            <span className="font-mono text-[10px] sm:text-xs uppercase tracking-[0.4em] text-muted">
+              Other Channels
+            </span>
+            <span aria-hidden className="h-px flex-1 bg-border" />
+          </div>
+
+          <ol className="flex flex-col">
+            {scoreRows.map((row, i) => {
+              const isExternal = row.href.startsWith("http");
+              return (
+                <li key={row.label}>
+                  <a
+                    href={row.href}
+                    target={isExternal ? "_blank" : undefined}
+                    rel={isExternal ? "noopener noreferrer" : undefined}
+                    download={row.download}
+                    className="group flex items-baseline gap-3 sm:gap-5 py-2.5 sm:py-3 border-b border-border/50 font-mono text-[11px] sm:text-xs uppercase tracking-[0.18em] text-foreground/80 hover:text-accent transition-[color,padding] duration-200 hover:pl-2"
+                  >
+                    <span className="text-accent/70 group-hover:text-accent tabular-nums">
+                      CH·{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-foreground group-hover:text-accent">
+                      {row.label}
+                    </span>
+                    <span className="text-muted/70 normal-case tracking-normal truncate">
+                      {row.handle}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="ml-auto text-accent transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    >
+                      ↗
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+            {/* the open slot — the channel that's still static, waiting */}
+            <li>
+              <a
+                href={`mailto:${EMAIL}?subject=${encodeURIComponent("Tuning into channel 05")}`}
+                className="group flex items-baseline gap-3 sm:gap-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs uppercase tracking-[0.18em] text-muted hover:text-accent transition-[color,padding] duration-200 hover:pl-2"
+              >
+                <span className="tabular-nums text-muted/60 group-hover:text-accent">
+                  CH·{String(scoreRows.length + 1).padStart(2, "0")}
+                </span>
+                <span className="arcade-blink">You</span>
+                <span className="text-muted/50 normal-case tracking-normal">
+                  ··· this channel is open
+                </span>
+                <span
+                  aria-hidden
+                  className="ml-auto text-accent transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                >
+                  ↗
+                </span>
+              </a>
+            </li>
+          </ol>
+        </motion.div>
+
+        {/* player stats footer line */}
+        <motion.div
+          className="mt-10 sm:mt-12 flex flex-wrap items-center gap-x-4 sm:gap-x-5 gap-y-2 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-muted"
+          custom={2}
+          variants={fadeUp}
+          initial="hidden"
+          animate={wrapInView ? "visible" : "hidden"}
+        >
+          <span>
+            Player: <span className="text-foreground">Divyansh</span>
+          </span>
+          <span className="text-muted/40">·</span>
+          <span>Location: India (UTC+5:30)</span>
+          <span className="text-muted/40">·</span>
+          <span>
+            Response: <span className="text-accent">&lt; 24h</span>
+          </span>
         </motion.div>
 
         {/* signature flourish — italic name + chalk underscore that draws in
             on scroll-into-view with a glowing terminator dot */}
         <div
           ref={sigWrapRef}
-          className="mt-20 sm:mt-28 md:mt-32 flex justify-end"
+          className="mt-16 sm:mt-24 md:mt-28 flex justify-end"
         >
           <div className="relative inline-block text-right">
             <motion.span
@@ -355,60 +393,16 @@ export function ContactSection() {
             </svg>
           </div>
         </div>
-
-        {/* "Also at" P.S. row — single hairline-bordered inline list */}
-        <motion.div
-          className="mt-12 sm:mt-16 border-t border-border/60 pt-5 sm:pt-6 flex flex-wrap items-center gap-x-5 sm:gap-x-7 gap-y-3 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-muted"
-          custom={2}
-          variants={fadeUp}
-          initial="hidden"
-          animate={wrapInView ? "visible" : "hidden"}
-        >
-          <span>Also at</span>
-          {elsewhere.map((s, i) => {
-            const isExternal = s.href.startsWith("http");
-            return (
-              <span
-                key={s.label}
-                className="flex items-center gap-x-5 sm:gap-x-7"
-              >
-                {i > 0 && <span className="text-muted/40">·</span>}
-                <a
-                  href={s.href}
-                  target={isExternal ? "_blank" : undefined}
-                  rel={isExternal ? "noopener noreferrer" : undefined}
-                  className="group inline-flex items-baseline gap-1.5 text-foreground/80 hover:text-accent transition-colors"
-                >
-                  <span>{s.label}</span>
-                  <span className="text-muted/60 normal-case tracking-normal">
-                    {s.handle}
-                  </span>
-                  <span
-                    aria-hidden
-                    className="text-accent transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  >
-                    ↗
-                  </span>
-                </a>
-              </span>
-            );
-          })}
-        </motion.div>
       </div>
 
-      {/* sign-off marquee — endless horizontal scroll, pauses on hover.
-          Content is duplicated once so the -50% translate seams perfectly. */}
+      {/* end-of-broadcast ticker — the strip at the bottom of a TV
+          transmission. Endless crawl, pauses on hover; content duplicated
+          once so the -50% translate seams perfectly. */}
       <div
         aria-hidden
-        className="contact-marquee-track relative w-full overflow-hidden border-t border-border/60 py-6 sm:py-8"
+        className="contact-marquee-track relative w-full overflow-hidden border-t border-border/60 py-3.5 sm:py-4"
       >
-        <div
-          className="contact-marquee flex flex-nowrap items-center whitespace-nowrap font-serif italic text-foreground/85"
-          style={{
-            fontSize: "clamp(1.15rem, 3.5vw, 3rem)",
-            textShadow: "0 0 18px rgba(200,255,61,0.12)",
-          }}
-        >
+        <div className="contact-marquee flex flex-nowrap items-center whitespace-nowrap font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.3em] text-muted">
           {[0, 1].map((dup) => (
             <div
               key={dup}
@@ -417,14 +411,14 @@ export function ContactSection() {
               {MARQUEE_PHRASES.map((p, i) => (
                 <span
                   key={`${dup}-${i}`}
-                  className="flex items-center pr-12 sm:pr-16"
+                  className="flex items-center pr-10 sm:pr-14"
                 >
                   {p}
                   <span
-                    className="text-accent pl-12 sm:pl-16"
-                    style={{ textShadow: "0 0 12px rgba(200,255,61,0.6)" }}
+                    className="text-accent pl-10 sm:pl-14"
+                    style={{ textShadow: "0 0 10px rgba(200,255,61,0.5)" }}
                   >
-                    ✦
+                    ▸
                   </span>
                 </span>
               ))}
@@ -433,5 +427,36 @@ export function ContactSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+function ScreenCornerBrackets() {
+  return (
+    <div aria-hidden className="absolute -inset-x-2 -inset-y-4 pointer-events-none">
+      {(["tl", "tr", "bl", "br"] as const).map((corner) => {
+        const isTop = corner[0] === "t";
+        const isLeft = corner[1] === "l";
+        return (
+          <span
+            key={corner}
+            className="absolute"
+            style={{
+              top: isTop ? 0 : "auto",
+              bottom: !isTop ? 0 : "auto",
+              left: isLeft ? 0 : "auto",
+              right: !isLeft ? 0 : "auto",
+              width: 14,
+              height: 14,
+              borderStyle: "solid",
+              borderColor: "rgba(200,255,61,0.4)",
+              borderTopWidth: isTop ? 1 : 0,
+              borderBottomWidth: !isTop ? 1 : 0,
+              borderLeftWidth: isLeft ? 1 : 0,
+              borderRightWidth: !isLeft ? 1 : 0,
+            }}
+          />
+        );
+      })}
+    </div>
   );
 }
