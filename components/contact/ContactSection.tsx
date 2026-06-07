@@ -334,64 +334,14 @@ export function ContactSection() {
           </span>
         </motion.div>
 
-        {/* signature flourish — italic name + chalk underscore that draws in
-            on scroll-into-view with a glowing terminator dot */}
+        {/* signature — the handwritten mark (Sacramento + hand-tuned looping
+            flourish from the design handoff). The word fades in, then the
+            flourish draws itself, ending in the glowing dot. */}
         <div
           ref={sigWrapRef}
           className="mt-16 sm:mt-24 md:mt-28 flex justify-end"
         >
-          <div className="relative inline-block text-right">
-            <motion.span
-              className="block font-serif italic text-xl sm:text-2xl text-foreground/85"
-              style={{ textShadow: "0 0 14px rgba(200,255,61,0.12)" }}
-              initial={{ opacity: 0, y: 8 }}
-              animate={
-                sigInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }
-              }
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              Divyansh
-            </motion.span>
-            <svg
-              aria-hidden
-              viewBox="0 0 240 28"
-              className="block w-[180px] sm:w-[220px] lg:w-[260px] -mt-1 ml-auto"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M 6 16 C 32 6, 72 24, 118 12 S 196 22, 234 10"
-                stroke="rgba(200,255,61,0.18)"
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 6 16 C 32 6, 72 24, 118 12 S 196 22, 234 10"
-                stroke="#c8ff3d"
-                strokeWidth="1.4"
-                fill="none"
-                strokeLinecap="round"
-                style={{
-                  strokeDasharray: 280,
-                  strokeDashoffset: sigInView ? 0 : 280,
-                  transition:
-                    "stroke-dashoffset 1.8s cubic-bezier(0.65, 0, 0.35, 1) 0.4s",
-                  filter: "drop-shadow(0 0 6px rgba(200,255,61,0.45))",
-                }}
-              />
-              <circle
-                cx="234"
-                cy="10"
-                r="2"
-                fill="#c8ff3d"
-                style={{
-                  opacity: sigInView ? 1 : 0,
-                  transition: "opacity 0.4s ease 2.0s",
-                  filter: "drop-shadow(0 0 6px rgba(200,255,61,0.7))",
-                }}
-              />
-            </svg>
-          </div>
+          <SignatureLooped inView={sigInView} />
         </div>
       </div>
 
@@ -427,6 +377,79 @@ export function ContactSection() {
         </div>
       </div>
     </section>
+  );
+}
+
+// Variant A1 from the signature handoff — "Divyansh" in Sacramento with a
+// looping underline flourish. Geometry (path d, rotation center, font
+// size/x) is hand-tuned to this exact word; do not change the text without
+// regenerating the flourish (see design_handoff_signature/README.md).
+function SignatureLooped({ inView }: { inView: boolean }) {
+  const flourishRef = useRef<SVGPathElement>(null);
+
+  // measure the real path length once so the draw-in covers exactly the
+  // stroke (a hardcoded dasharray would distort the animation timing)
+  useEffect(() => {
+    const p = flourishRef.current;
+    if (!p) return;
+    const len = p.getTotalLength();
+    p.style.strokeDasharray = String(len);
+    p.style.strokeDashoffset = inView ? "0" : String(len);
+  }, [inView]);
+
+  return (
+    <svg
+      viewBox="0 0 642.9 240"
+      role="img"
+      aria-label="Divyansh"
+      className="block h-20 sm:h-24 lg:h-28 w-auto overflow-visible"
+      style={{
+        filter:
+          "drop-shadow(0 0 3px rgba(200,255,61,0.55)) drop-shadow(0 0 11px rgba(200,255,61,0.26))",
+      }}
+    >
+      <g transform="rotate(-3.2 318.4 150)">
+        <text
+          x="26"
+          y="150"
+          style={{
+            fontFamily: "var(--font-signature), cursive",
+            fontSize: 132,
+            fill: "#c8ff3d",
+            opacity: inView ? 1 : 0,
+            transition: "opacity 0.7s ease 0.1s",
+          }}
+        >
+          Divyansh
+        </text>
+        <path
+          ref={flourishRef}
+          d="M 461.1 156 C 423.1 204, 203.2 210, 88 194 C 14 178, 105.8 172, 247.5 172 C 402.6 172, 572.9 162, 610.9 146"
+          fill="none"
+          stroke="#c8ff3d"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            // hidden until measured (dasharray > any plausible length)
+            strokeDasharray: 2000,
+            strokeDashoffset: 2000,
+            transition:
+              "stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.5s",
+          }}
+        />
+        <circle
+          cx="610.9"
+          cy="146"
+          r="4.4"
+          fill="#c8ff3d"
+          style={{
+            opacity: inView ? 1 : 0,
+            transition: "opacity 0.4s ease 1.9s",
+          }}
+        />
+      </g>
+    </svg>
   );
 }
 

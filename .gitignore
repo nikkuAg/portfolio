@@ -40,5 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# logo source archive (assets extracted to public/)
-Portfolio.zip
+# design source archives (assets extracted to public/)
+*.zip

@@ -1,11 +1,26 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+import { SITE_URL } from "@/lib/site";
 
 export const alt =
   "Divyansh Agarwal · Full-stack engineer. Interfaces, services, and the wires between them.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default function OG() {
+// The share card: DA mark top-left, the handwritten signature as the hero
+// (raster export from the design handoff — OG renderers can't load the
+// webfont), tagline + domain in the chrome. Same black/phosphor system as
+// the site, dot grain included.
+export default async function OG() {
+  const [sig, mark] = await Promise.all([
+    readFile(join(process.cwd(), "public/signature-full.png")),
+    readFile(join(process.cwd(), "public/da-512.png")),
+  ]);
+  const sigSrc = `data:image/png;base64,${sig.toString("base64")}`;
+  const markSrc = `data:image/png;base64,${mark.toString("base64")}`;
+  const domain = SITE_URL.replace(/^https?:\/\//, "");
+
   return new ImageResponse(
     (
       <div
@@ -14,65 +29,101 @@ export default function OG() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 72,
-          background: "#0a0a0a",
-          color: "#f5f5f5",
+          // matches the signature PNG's baked background exactly (#0b0b0b,
+          // measured), so the raster sits invisibly on the card
+          background: "#0b0b0b",
+          padding: 56,
           fontFamily: "monospace",
         }}
       >
+        {/* header row — mark + status */}
         <div
           style={{
             display: "flex",
+            alignItems: "center",
             justifyContent: "space-between",
-            fontSize: 18,
-            color: "#9c9c9c",
-            letterSpacing: 4,
           }}
         >
-          <span>DIVYANSH AGARWAL</span>
-          <span>PORTFOLIO · 2026</span>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <span
+          { }
+          <img src={markSrc} width={84} height={84} alt="" />
+          <div
             style={{
-              fontSize: 88,
-              lineHeight: 1.05,
-              color: "#f5f5f5",
-              fontFamily: "Georgia, serif",
-              fontStyle: "italic",
-              maxWidth: 1000,
-            }}
-          >
-            Interfaces, services,
-          </span>
-          <span
-            style={{
-              fontSize: 88,
-              lineHeight: 1.05,
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
               color: "#c8ff3d",
-              fontFamily: "Georgia, serif",
-              fontStyle: "italic",
-              maxWidth: 1000,
+              fontSize: 22,
+              letterSpacing: 6,
             }}
           >
-            and the wires between them.
-          </span>
+            <div
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                background: "#c8ff3d",
+              }}
+            />
+            INBOX OPEN
+          </div>
         </div>
 
+        {/* signature hero */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          { }
+          <img src={sigSrc} width={860} alt="" />
+        </div>
+
+        {/* footer row — role + domain */}
         <div
           style={{
             display: "flex",
+            alignItems: "baseline",
             justifyContent: "space-between",
-            fontSize: 16,
             color: "#9c9c9c",
-            letterSpacing: 3,
+            fontSize: 24,
+            letterSpacing: 5,
           }}
         >
-          <span>FULL-STACK ENGINEER</span>
-          <span>github.com/nikkuAg</span>
+          <div style={{ display: "flex" }}>FULL-STACK ENGINEER</div>
+          <div style={{ display: "flex", color: "#c8ff3d" }}>{domain}</div>
         </div>
+
+        {/* corner ticks */}
+        {(
+          [
+            { top: 20, left: 20, bt: 2, bl: 2 },
+            { top: 20, right: 20, bt: 2, br: 2 },
+            { bottom: 20, left: 20, bb: 2, bl: 2 },
+            { bottom: 20, right: 20, bb: 2, br: 2 },
+          ] as const
+        ).map((c, i) => (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: 22,
+              height: 22,
+              borderColor: "rgba(200,255,61,0.45)",
+              borderStyle: "solid",
+              borderTopWidth: "bt" in c ? 2 : 0,
+              borderBottomWidth: "bb" in c ? 2 : 0,
+              borderLeftWidth: "bl" in c ? 2 : 0,
+              borderRightWidth: "br" in c ? 2 : 0,
+              ...("top" in c ? { top: c.top } : {}),
+              ...("bottom" in c ? { bottom: c.bottom } : {}),
+              ...("left" in c ? { left: c.left } : {}),
+              ...("right" in c ? { right: c.right } : {}),
+            }}
+          />
+        ))}
       </div>
     ),
     { ...size },
