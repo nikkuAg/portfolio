@@ -168,9 +168,9 @@ export function ContactSection() {
         </motion.div>
 
         {/* editorial heading — each word wipes up from a clip mask. The
-            italic "something" word keeps its accent phosphor styling. */}
+            "something" word keeps its accent phosphor glow. */}
         <h2
-          className="font-serif leading-[0.92] tracking-tight max-w-5xl text-foreground"
+          className="font-display font-bold leading-[0.92] tracking-tight max-w-5xl text-foreground"
           style={{ fontSize: "clamp(2.5rem, 9vw, 6.5rem)" }}
         >
           {HEADING_WORDS.map((word, i) => (
@@ -188,7 +188,7 @@ export function ContactSection() {
               >
                 {word === "something" ? (
                   <em
-                    className="italic"
+                    className="not-italic"
                     style={{
                       color: "#c8ff3d",
                       textShadow:
@@ -218,7 +218,7 @@ export function ContactSection() {
             <a
               ref={magnetTargetRef}
               href={`mailto:${EMAIL}`}
-              className="group relative inline-flex items-baseline gap-3 sm:gap-5 font-serif italic text-foreground hover:text-accent w-fit max-w-full break-all will-change-transform"
+              className="group relative inline-flex items-baseline gap-3 sm:gap-5 font-display font-medium text-foreground hover:text-accent w-fit max-w-full break-all will-change-transform"
               style={{
                 fontSize: "clamp(1.25rem, 4.5vw, 3rem)",
                 textShadow:

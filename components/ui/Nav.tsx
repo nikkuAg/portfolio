@@ -178,7 +178,7 @@ export function Nav() {
                   <a
                     href={link.href}
                     onClick={(e) => handleNavClick(e, link.href)}
-                    className="flex items-baseline justify-between border-b border-border py-5 font-serif text-3xl tracking-tight hover:text-accent transition-colors"
+                    className="flex items-baseline justify-between border-b border-border py-5 font-display font-semibold text-3xl tracking-tight hover:text-accent transition-colors"
                   >
                     <span>{link.label}</span>
                     <span className="font-mono text-[10px] uppercase tracking-widest text-muted">

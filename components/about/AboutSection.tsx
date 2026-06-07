@@ -16,8 +16,8 @@ export function AboutSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16">
           <div className="md:col-span-7">
-            <h2 className="font-serif text-[2.5rem] sm:text-5xl md:text-7xl leading-[0.95] tracking-tight mb-8 md:mb-10">
-              I build the <em className="italic">interfaces</em> and <em className="italic">small worlds</em> that live in browsers.
+            <h2 className="font-display font-bold text-[2.5rem] sm:text-5xl md:text-7xl leading-[0.95] tracking-tight mb-8 md:mb-10">
+              I build the <em className="not-italic text-accent">interfaces</em> and <em className="not-italic text-accent">small worlds</em> that live in browsers.
             </h2>
             <div className="space-y-4 sm:space-y-5 text-base sm:text-lg md:text-xl text-muted max-w-2xl leading-relaxed">
               {about.bio.map((p, i) => (

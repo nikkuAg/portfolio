@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import {
   Geist,
   Geist_Mono,
-  Instrument_Serif,
+  Chakra_Petch,
   Sacramento,
 } from "next/font/google";
 import "./globals.css";
@@ -28,11 +28,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-serif",
+// display face — squared-off sci-fi/HUD sans for headings + titles, to
+// match the arcade / CRT theme (replaces the old serif)
+const chakraPetch = Chakra_Petch({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // the handwritten signature letterforms (contact sign-off + footer handle)
@@ -120,7 +121,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${sacramento.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${chakraPetch.variable} ${sacramento.variable}`}
     >
       <body className="bg-background text-foreground font-sans antialiased">
         <LenisProvider>

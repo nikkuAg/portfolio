@@ -17,8 +17,8 @@ export function ExperienceFallback() {
           </span>
         </div>
 
-        <h2 className="font-serif text-4xl sm:text-5xl leading-[0.95] tracking-tight mb-10">
-          Where I&apos;ve <em className="italic">shipped</em>.
+        <h2 className="font-display font-bold text-4xl sm:text-5xl leading-[0.95] tracking-tight mb-10">
+          Where I&apos;ve <em className="not-italic text-accent">shipped</em>.
         </h2>
 
         <ol className="relative border-l border-border ml-2">
@@ -61,10 +61,10 @@ export function ExperienceFallback() {
                   </span>
                 </div>
 
-                <h3 className="font-serif italic text-2xl sm:text-3xl leading-tight tracking-tight mb-1">
+                <h3 className="font-display font-semibold uppercase text-2xl sm:text-3xl leading-tight tracking-tight mb-1">
                   {role.role}
                 </h3>
-                <p className="font-serif text-base sm:text-lg text-foreground/85 mb-3">
+                <p className="font-display text-base sm:text-lg text-accent/90 mb-3">
                   {role.company}
                 </p>
 

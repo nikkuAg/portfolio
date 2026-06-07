@@ -37,8 +37,8 @@ export function ExperienceHUD({
         </span>
       </div>
 
-      <h2 className="font-serif text-3xl md:text-5xl leading-[0.95] tracking-tight mt-2">
-        Where I&apos;ve <em className="italic">shipped</em>.
+      <h2 className="font-display font-bold text-3xl md:text-5xl leading-[0.95] tracking-tight mt-2">
+        Where I&apos;ve <em className="not-italic text-accent">shipped</em>.
       </h2>
 
       {/* the void owns the middle */}
@@ -86,10 +86,10 @@ export function ExperienceHUD({
               </span>
             </div>
 
-            <h3 className="font-serif text-xl sm:text-2xl md:text-[1.7rem] leading-tight">
+            <h3 className="font-display font-semibold uppercase text-xl sm:text-2xl md:text-[1.7rem] leading-tight">
               {role.role}
             </h3>
-            <p className="font-serif italic text-base md:text-lg text-foreground/80 mb-3">
+            <p className="font-display text-base md:text-lg text-accent/90 mb-3">
               {role.company}
             </p>
 

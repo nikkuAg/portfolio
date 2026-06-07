@@ -140,11 +140,6 @@ export function ProjectsSection() {
               </span>
             </div>
 
-            <h2 className="font-serif text-3xl md:text-[2.6rem] leading-[0.95] tracking-tight">
-              Things I&apos;ve <em className="italic">shipped</em>, broken, and
-              rebuilt.
-            </h2>
-
             <ActiveProjectInfo project={activeProject} />
 
             <DeckProgress topIdx={topIdx} total={N} onJump={jumpTo} />
@@ -253,8 +248,8 @@ function ProjectsMobileCarousel() {
         </span>
       </div>
 
-      <h2 className="font-serif text-3xl sm:text-4xl leading-[0.95] tracking-tight mb-5">
-        Things I&apos;ve <em className="italic">shipped</em>, broken, and
+      <h2 className="font-display font-bold text-3xl sm:text-4xl leading-[0.95] tracking-tight mb-5">
+        Things I&apos;ve <em className="not-italic text-accent">shipped</em>, broken, and
         rebuilt.
       </h2>
 
@@ -361,7 +356,7 @@ function MobileProjectCard({
 
         {/* title — sized down vs desktop so long titles stay one line */}
         <h3
-          className={`font-serif italic leading-[0.95] tracking-tight ${
+          className={`font-display font-bold uppercase leading-[0.95] tracking-tight ${
             project.title.length > 14
               ? "text-[2rem]"
               : project.title.length > 9
@@ -390,7 +385,7 @@ function MobileProjectCard({
         </div>
 
         {/* tagline */}
-        <p className="font-serif text-lg text-foreground/85 leading-snug">
+        <p className="font-display text-lg text-foreground/85 leading-snug">
           {project.tagline}
         </p>
 
@@ -581,7 +576,7 @@ function CardFace({
         {/* center title — uses the category tint with a soft glow */}
         <div className="flex-1 flex items-center justify-center text-center px-2">
           <h3
-            className={`font-serif italic leading-[0.92] tracking-tight ${
+            className={`font-display font-bold uppercase leading-[0.92] tracking-tight ${
               project.title.length > 14
                 ? "text-[2.1rem] md:text-4xl"
                 : project.title.length > 9
@@ -672,17 +667,15 @@ function ActiveProjectInfo({ project }: { project: Project }) {
           )}
         </div>
 
-        <h3 className="font-serif italic text-2xl sm:text-3xl md:text-[3rem] leading-[0.95] tracking-tight">
+        <h3 className="font-display font-bold uppercase text-2xl sm:text-3xl md:text-[3rem] leading-[0.95] tracking-tight">
           {project.title}
         </h3>
 
-        <p className="font-serif text-base sm:text-lg md:text-xl text-foreground/85 leading-snug">
+        {/* one-line tagline — the dense full description was dropped from the
+            pinned panel to keep it to ~5 elements (it still lives on the
+            mobile cards + the sr-only list) */}
+        <p className="font-display text-base sm:text-lg md:text-xl text-foreground/85 leading-snug">
           {project.tagline}
-        </p>
-
-        {/* full description: desktop only — mobile is space-constrained */}
-        <p className="hidden md:block text-sm md:text-[15px] text-muted leading-relaxed">
-          {project.description}
         </p>
 
         <ul className="flex flex-wrap gap-1.5 mt-1">
