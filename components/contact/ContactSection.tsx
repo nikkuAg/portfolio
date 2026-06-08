@@ -291,27 +291,6 @@ export function ContactSection() {
                 </li>
               );
             })}
-            {/* the open slot — the channel that's still static, waiting */}
-            <li>
-              <a
-                href={`mailto:${EMAIL}?subject=${encodeURIComponent("Tuning into channel 05")}`}
-                className="group flex items-baseline gap-3 sm:gap-5 py-2.5 sm:py-3 font-mono text-[11px] sm:text-xs uppercase tracking-[0.18em] text-muted hover:text-accent transition-[color,padding] duration-200 hover:pl-2"
-              >
-                <span className="tabular-nums text-muted/60 group-hover:text-accent">
-                  CH·{String(scoreRows.length + 1).padStart(2, "0")}
-                </span>
-                <span className="arcade-blink">You</span>
-                <span className="text-muted/50 normal-case tracking-normal">
-                  ··· this channel is open
-                </span>
-                <span
-                  aria-hidden
-                  className="ml-auto text-accent transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                >
-                  ↗
-                </span>
-              </a>
-            </li>
           </ol>
         </motion.div>
 
