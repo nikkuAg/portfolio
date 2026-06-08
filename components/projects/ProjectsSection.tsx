@@ -802,9 +802,6 @@ function DeckProgress({
           </li>
         ))}
       </ol>
-      <span className="font-mono text-[10px] uppercase tracking-widest text-muted whitespace-nowrap">
-        scroll ↓
-      </span>
     </div>
   );
 }
