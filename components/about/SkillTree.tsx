@@ -75,8 +75,6 @@ const BRANCHES: Branch[] = [
   },
 ];
 
-const MAX_SKILLS = Math.max(...BRANCHES.map((b) => b.skills.length));
-
 const container: Variants = {
   hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.2 } },
@@ -243,7 +241,6 @@ export function SkillTree() {
       >
         {BRANCHES.map((b) => {
           const dimmed = active !== null && active !== b.id;
-          const fill = Math.round((b.skills.length / MAX_SKILLS) * 100);
           return (
             <motion.div
               key={b.id}
@@ -263,23 +260,9 @@ export function SkillTree() {
                 }}
               />
 
-              {/* branch header + count-based mastery bar */}
+              {/* branch header */}
               <div className="flex items-center gap-2 mb-2 font-mono text-[11px] uppercase tracking-[0.25em]">
                 <span style={{ color: b.color }}>{b.label}</span>
-                <span className="text-muted/40">·</span>
-                <span className="text-muted/60">{b.skills.length}</span>
-                <span
-                  aria-hidden
-                  className="ml-1 h-px flex-1 max-w-[70px] rounded-full overflow-hidden bg-border"
-                >
-                  <motion.span
-                    className="block h-full origin-left"
-                    style={{ background: b.color }}
-                    initial={reduced ? false : { scaleX: 0 }}
-                    animate={inView ? { scaleX: fill / 100 } : undefined}
-                    transition={{ duration: 0.7, ease: "easeOut", delay: 0.5 }}
-                  />
-                </span>
               </div>
 
               {/* skill chips — primary are the bright tier-1 unlocks */}
