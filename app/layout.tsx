@@ -53,15 +53,22 @@ export const metadata: Metadata = {
   keywords: [
     "Divyansh Agarwal",
     "full-stack engineer",
-    "software engineer",
-    "web developer",
+    "full-stack developer",
+    "frontend engineer",
+    "frontend developer",
+    "backend engineer",
+    "backend developer",
     "game developer",
+    "game development",
+    "software engineer",
     "React",
     "Next.js",
     "TypeScript",
+    "Three.js",
+    "WebGL",
+    "Node.js",
     "Python",
     "Go",
-    "portfolio",
     "Bangalore",
     "India",
   ],
@@ -124,11 +131,20 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${chakraPetch.variable} ${sacramento.variable}`}
     >
       <body className="bg-background text-foreground font-sans antialiased">
+        {/* keyboard skip link — first focusable element, hidden until focused */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-3 focus:py-2 focus:rounded-md focus:bg-accent focus:text-background font-mono text-xs uppercase tracking-widest"
+        >
+          Skip to content
+        </a>
         <LenisProvider>
           <Loader />
           <CustomCursor />
           <Nav />
-          <main className="relative">{children}</main>
+          <main id="main-content" className="relative">
+            {children}
+          </main>
         </LenisProvider>
       </body>
     </html>

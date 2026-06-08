@@ -33,6 +33,15 @@ body {
   overflow-x: hidden;
 }
 
+/* keyboard focus ring — the custom cursor hides the mouse pointer, so a
+   clear focus-visible state is essential for keyboard navigation (and the
+   Usability score). Only shows for keyboard focus, never on mouse click. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 /* hide native cursor on fine-pointer devices — custom cursor takes over */
 @media (pointer: fine) {
   html,
