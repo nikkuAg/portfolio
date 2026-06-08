@@ -1,5 +1,5 @@
 import { about } from "@/content/about";
-import { SkillsConstellation } from "./SkillsConstellation";
+import { SkillTree } from "./SkillTree";
 
 export function AboutSection() {
   return (
@@ -27,32 +27,13 @@ export function AboutSection() {
           </div>
 
           <aside className="md:col-span-5 md:pl-10 md:border-l border-border">
-            <div className="flex items-baseline justify-between mb-5 md:mb-6">
+            <div className="mb-5 md:mb-6">
               <p className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-muted">
                 Toolbelt
               </p>
-              {/* desktop-only legend — mobile pill grid below has its own
-                  per-group headers so this would be redundant */}
-              <p className="hidden md:flex font-mono text-[10px] uppercase tracking-widest text-muted/60">
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-1 rounded-full bg-foreground/60" /> front
-                </span>
-                <span className="mx-2">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <span
-                    className="size-1 rounded-full"
-                    style={{ background: "#7aa8ff" }}
-                  />{" "}
-                  infra
-                </span>
-                <span className="mx-2">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <span className="size-1 rounded-full bg-accent" /> game
-                </span>
-              </p>
             </div>
 
-            <SkillsConstellation />
+            <SkillTree />
 
             <div className="mt-10 space-y-3 font-mono text-xs text-muted">
               <div className="flex justify-between">
