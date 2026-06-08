@@ -103,8 +103,8 @@ export function ExperienceScene({
           <DepthOfField
             ref={dofRef}
             worldFocusDistance={STANDOFF}
-            worldFocusRange={5}
-            bokehScale={2.6}
+            worldFocusRange={12}
+            bokehScale={1.8}
           />
           <Bloom
             mipmapBlur
