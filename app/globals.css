@@ -224,32 +224,6 @@ html.lenis body {
   }
 }
 
-/* CRT portrait — a faint phosphor scanline sweeping down the still, so the
-   "channel" reads as a live signal rather than a static photo */
-@keyframes portrait-scan {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-.portrait-scan {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(200, 255, 61, 0.12) 50%,
-    transparent
-  );
-  height: 40%;
-  animation: portrait-scan 5.5s linear infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .portrait-scan {
-    animation: none !important;
-  }
-}
-
 /* contact-section marquee — endless horizontal scroll, content is duplicated
    in markup so the -50% translate produces a seamless loop */
 @keyframes contact-marquee {
