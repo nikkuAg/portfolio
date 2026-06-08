@@ -18,6 +18,7 @@ import {
 } from "./hero-overlay";
 import { CRTScreenMaterial } from "./crtShader";
 import { setChannel, useChannel } from "./useChannel";
+import { sound } from "@/lib/sound";
 
 const TEX_W = 768;
 const TEX_H = 576;
@@ -202,7 +203,9 @@ export function CRTScreen() {
         const dir = autoPilotDir(stateRef.current);
         stateRef.current = inputSnake(stateRef.current, dir);
       }
+      const prevScore = stateRef.current.score;
       stateRef.current = tickSnake(stateRef.current);
+      if (stateRef.current.score > prevScore) sound.play("blip"); // ate food
       lastTickRef.current = 0;
     }
 
