@@ -224,6 +224,32 @@ html.lenis body {
   }
 }
 
+/* PCB skill board — current flowing along the copper traces (dashed
+   overlay scrolling its dashoffset), and chips lighting on hover */
+@keyframes pcb-flow {
+  to {
+    stroke-dashoffset: -32;
+  }
+}
+.pcb-flow {
+  stroke-dasharray: 2 14;
+  stroke-linecap: round;
+  animation: pcb-flow 1.3s linear infinite;
+}
+.pcb-chip .pcb-pad {
+  transition: fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+.pcb-chip:hover .pcb-pad {
+  fill: #141414;
+  stroke: #c8ff3d;
+  filter: drop-shadow(0 0 6px rgba(200, 255, 61, 0.5));
+}
+@media (prefers-reduced-motion: reduce) {
+  .pcb-flow {
+    animation: none !important;
+  }
+}
+
 /* contact-section marquee — endless horizontal scroll, content is duplicated
    in markup so the -50% translate produces a seamless loop */
 @keyframes contact-marquee {

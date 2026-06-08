@@ -1,6 +1,6 @@
 import { about } from "@/content/about";
 import { experience } from "@/content/experience";
-import { SkillsTerminal } from "./SkillsTerminal";
+import { SkillsBoard } from "./SkillsBoard";
 
 export function AboutSection() {
   return (
@@ -28,7 +28,7 @@ export function AboutSection() {
           </div>
 
           <aside className="md:col-span-5 md:pl-10 md:border-l border-border">
-            <SkillsTerminal />
+            <SkillsBoard />
 
             {/* live status panel — current role pulled from experience data */}
             <div className="mt-10 rounded-xl border border-border bg-card/40 p-4 font-mono text-xs">
