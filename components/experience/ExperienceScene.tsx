@@ -488,12 +488,13 @@ function GateLogo({ src }: { src: string }) {
     };
   }, [src]);
 
-  // fit the logo within a ~2-unit box, preserving its aspect ratio
+  // fit the logo within a small box centered on the portal face,
+  // preserving aspect ratio (kept well inside the GATE_W x GATE_H frame)
   const dims = useMemo(() => {
     if (!tex?.image) return null;
     const img = tex.image as { width: number; height: number };
     const aspect = img.width / img.height || 1;
-    const MAX = 2;
+    const MAX = 1.25;
     let w = MAX;
     let h = MAX / aspect;
     if (h > MAX) {
