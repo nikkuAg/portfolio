@@ -358,9 +358,13 @@ function Gate({
           normal blending so it never dominates the page */}
       <Membrane tint={tint} compact={compact} membraneRef={membraneRef} />
 
-      {/* company logo — white silhouette on the brand-color gradient, on
-          the portal face. Silent no-op until a logo PNG is provided. */}
-      {role.logo && <GateLogo src={role.logo} />}
+      {/* portal mark — the company logo (white silhouette) if we have one,
+          otherwise a monogram from the company initials so no gate is blank */}
+      {role.logo ? (
+        <GateLogo src={role.logo} />
+      ) : (
+        <GateMonogram text={initials(role.company)} />
+      )}
 
       <GateLabel role={role} index={index} tint={tint} />
     </group>
@@ -509,6 +513,77 @@ function GateLogo({ src }: { src: string }) {
   return (
     <mesh position={[0, 0, 0.04]}>
       <planeGeometry args={[dims.w, dims.h]} />
+      <meshBasicMaterial
+        map={tex}
+        color={CHALK}
+        transparent
+        opacity={0.92}
+        toneMapped={false}
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+// ── monogram fallback — initials in the display font ─────────────────────
+// when a company has no logo, draw its initials (Chakra Petch, white) to a
+// canvas texture so every portal still carries a centered mark
+function initials(company: string): string {
+  const words = company.split(/[\s,]+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return (words[0]?.slice(0, 1) ?? "").toUpperCase();
+}
+
+function GateMonogram({ text }: { text: string }) {
+  const [tex, setTex] = useState<THREE.CanvasTexture | null>(null);
+
+  useEffect(() => {
+    let disposed = false;
+    let made: THREE.CanvasTexture | null = null;
+    const draw = () => {
+      const c = document.createElement("canvas");
+      c.width = 512;
+      c.height = 512;
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      const disp =
+        getComputedStyle(document.body)
+          .getPropertyValue("--font-display")
+          .trim() || "sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      // auto-fit so 1–2 chars fill the canvas without clipping
+      let size = 360;
+      ctx.font = `700 ${size}px ${disp}`;
+      const w = ctx.measureText(text).width;
+      const MAXW = 440;
+      if (w > MAXW) {
+        size = Math.floor((size * MAXW) / w);
+        ctx.font = `700 ${size}px ${disp}`;
+      }
+      ctx.fillStyle = "#f5f5f5";
+      ctx.fillText(text, 256, 286);
+      const t = new THREE.CanvasTexture(c);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = 4;
+      made = t;
+      if (!disposed) setTex(t);
+    };
+    draw();
+    document.fonts?.ready.then(() => {
+      if (!disposed) draw();
+    });
+    return () => {
+      disposed = true;
+      made?.dispose();
+    };
+  }, [text]);
+
+  if (!tex) return null;
+
+  return (
+    <mesh position={[0, 0, 0.04]}>
+      <planeGeometry args={[1.2, 1.2]} />
       <meshBasicMaterial
         map={tex}
         color={CHALK}

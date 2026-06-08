@@ -38,12 +38,12 @@ const COMPANY_THEME: Record<string, { color?: string; logo?: string }> = {
   },
   "BNY Mellon": { color: "#2b9cae", logo: "/logos/bny.png" },
   "Information Management Group, IIT Roorkee": {
-    color: "#009dff",
+    color: "#f8d26c",
     logo: "/logos/img.png",
   },
-  "Lica World": { color: "#6dadfa" },
+  "Lica World": { color: "#a4c8fa" },
   "Sugar Labs": { color: "#023ad4", logo: "/logos/sugar-labs.png" },
-  "Newton School": { color: "#0673f9", logo: "/logos/newton-school.png" },
+  "Newton School": { color: "#004599", logo: "/logos/newton-school.png" },
 };
 
 // chronological — newest first (resume convention)
