@@ -249,6 +249,8 @@ function Gate({
 }) {
   const ticksRef = useRef<THREE.Group>(null);
   const frameRef = useRef<THREE.Line>(null);
+  const templateRef = useRef<THREE.Line>(null);
+  const bracketsRef = useRef<THREE.LineSegments>(null);
   const membraneRef = useRef<THREE.Mesh>(null);
   // wraps the logo + label so they can fade out while this gate sits behind
   // the one being viewed (seen through its portal), and fade back as you
@@ -321,30 +323,45 @@ function Gate({
       1,
     );
 
+    // fade the WHOLE gate down while it sits behind the one being viewed, so
+    // nothing shows through the focused portal — each gate materialises only
+    // as you approach it. rel>0 = deeper than the current gate (seen through
+    // it); fades to ~0 within one gate's distance.
+    const rel = index - vIdx;
+    const fade =
+      rel <= 0.45 ? 1 : THREE.MathUtils.clamp(1 - (rel - 0.45) / 0.55, 0, 1);
+
     const frame = frameRef.current;
     if (frame) {
       const mat = frame.material as THREE.LineDashedMaterial;
-      mat.opacity = Math.min(
-        1,
-        (compact ? 0.7 : 0.55) + focus * 0.45 + cross * 0.4,
-      );
+      mat.opacity =
+        Math.min(1, (compact ? 0.7 : 0.55) + focus * 0.45 + cross * 0.4) *
+        fade;
     }
+    if (templateRef.current) {
+      (templateRef.current.material as THREE.LineDashedMaterial).opacity =
+        0.13 * fade;
+    }
+    if (bracketsRef.current) {
+      (bracketsRef.current.material as THREE.LineBasicMaterial).opacity =
+        0.4 * fade;
+    }
+
     const membrane = membraneRef.current;
     if (membrane) {
       const mat = membrane.material as THREE.MeshBasicMaterial;
-      mat.opacity = Math.min(1, (compact ? 0.6 : 0.5) + cross * 0.5);
+      mat.opacity = Math.min(1, (compact ? 0.6 : 0.5) + cross * 0.5) * fade;
     }
 
-    // fade the mark (logo + label) when this gate is BEHIND the viewed one,
-    // so its logo stops punching through the focused portal. rel>0 = deeper
-    // than the current gate (seen through it); fades to ~0 by one gate back.
+    if (ticksRef.current) {
+      ticksRef.current.children.forEach((c) => {
+        const m = (c as THREE.Mesh).material as THREE.MeshBasicMaterial;
+        if (m) m.opacity = 0.9 * fade;
+      });
+    }
+
     const mark = markRef.current;
     if (mark) {
-      const rel = index - vIdx;
-      const fade =
-        rel <= 0.4
-          ? 1
-          : THREE.MathUtils.clamp(1 - (rel - 0.4) / 0.7, 0, 1);
       mark.traverse((o) => {
         const m = (o as THREE.Mesh).material as THREE.MeshBasicMaterial;
         if (m && typeof m.opacity === "number") {
@@ -357,9 +374,9 @@ function Gate({
 
   return (
     <group position={[0, GATE_Y, -index * GATE_SPACING]}>
-      <primitive object={templateFrame} />
+      <primitive object={templateFrame} ref={templateRef} />
       <primitive object={chalkFrame} ref={frameRef} />
-      <primitive object={brackets} />
+      <primitive object={brackets} ref={bracketsRef} />
 
       {/* traveling chalk marks in the role's tint */}
       <group ref={ticksRef}>
