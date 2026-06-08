@@ -359,11 +359,11 @@ function Gate({
       <Membrane tint={tint} compact={compact} membraneRef={membraneRef} />
 
       {/* portal mark — the company logo (white silhouette) if we have one,
-          otherwise a monogram from the company initials so no gate is blank */}
+          otherwise the company name set as a wordmark so no gate is blank */}
       {role.logo ? (
         <GateLogo src={role.logo} />
       ) : (
-        <GateMonogram text={initials(role.company)} />
+        <GateWordmark text={role.company} />
       )}
 
       <GateLabel role={role} index={index} tint={tint} />
@@ -525,49 +525,47 @@ function GateLogo({ src }: { src: string }) {
   );
 }
 
-// ── monogram fallback — initials in the display font ─────────────────────
-// when a company has no logo, draw its initials (Chakra Petch, white) to a
-// canvas texture so every portal still carries a centered mark
-function initials(company: string): string {
-  const words = company.split(/[\s,]+/).filter(Boolean);
-  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-  return (words[0]?.slice(0, 1) ?? "").toUpperCase();
-}
-
-function GateMonogram({ text }: { text: string }) {
+// ── wordmark fallback — company name in the display font ──────────────────
+// when a company has no logo, set its name (Chakra Petch, white, uppercase)
+// as a wordmark on the portal — consistent with the wordmark-style logos
+// (Aspora, BNY, Sugar) so no gate is blank or reduced to bare initials
+function GateWordmark({ text }: { text: string }) {
   const [tex, setTex] = useState<THREE.CanvasTexture | null>(null);
+  const [aspect, setAspect] = useState(3);
+  const label = text.replace(/,.*$/, "").toUpperCase(); // drop ", IIT Roorkee" etc.
 
   useEffect(() => {
     let disposed = false;
     let made: THREE.CanvasTexture | null = null;
     const draw = () => {
-      const c = document.createElement("canvas");
-      c.width = 512;
-      c.height = 512;
-      const ctx = c.getContext("2d");
-      if (!ctx) return;
       const disp =
         getComputedStyle(document.body)
           .getPropertyValue("--font-display")
           .trim() || "sans-serif";
+      const S = 180;
+      const measure = document.createElement("canvas").getContext("2d");
+      if (!measure) return;
+      measure.font = `700 ${S}px ${disp}`;
+      const tw = Math.ceil(measure.measureText(label).width);
+      const padX = 40;
+      const c = document.createElement("canvas");
+      c.width = tw + padX * 2;
+      c.height = Math.round(S * 1.5);
+      const ctx = c.getContext("2d");
+      if (!ctx) return;
+      ctx.font = `700 ${S}px ${disp}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      // auto-fit so 1–2 chars fill the canvas without clipping
-      let size = 360;
-      ctx.font = `700 ${size}px ${disp}`;
-      const w = ctx.measureText(text).width;
-      const MAXW = 440;
-      if (w > MAXW) {
-        size = Math.floor((size * MAXW) / w);
-        ctx.font = `700 ${size}px ${disp}`;
-      }
       ctx.fillStyle = "#f5f5f5";
-      ctx.fillText(text, 256, 286);
+      ctx.fillText(label, c.width / 2, c.height / 2);
       const t = new THREE.CanvasTexture(c);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 4;
       made = t;
-      if (!disposed) setTex(t);
+      if (!disposed) {
+        setAspect(c.width / c.height);
+        setTex(t);
+      }
     };
     draw();
     document.fonts?.ready.then(() => {
@@ -577,13 +575,23 @@ function GateMonogram({ text }: { text: string }) {
       disposed = true;
       made?.dispose();
     };
-  }, [text]);
+  }, [label]);
 
   if (!tex) return null;
 
+  // fit within a 2.4-wide / 0.8-tall box, preserving aspect
+  const MAXW = 2.4;
+  const MAXH = 0.8;
+  let w = MAXW;
+  let h = MAXW / aspect;
+  if (h > MAXH) {
+    h = MAXH;
+    w = MAXH * aspect;
+  }
+
   return (
     <mesh position={[0, 0, 0.04]}>
-      <planeGeometry args={[1.2, 1.2]} />
+      <planeGeometry args={[w, h]} />
       <meshBasicMaterial
         map={tex}
         color={CHALK}
