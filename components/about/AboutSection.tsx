@@ -1,4 +1,5 @@
 import { about } from "@/content/about";
+import { experience } from "@/content/experience";
 import { SkillTree } from "./SkillTree";
 
 export function AboutSection() {
@@ -35,15 +36,34 @@ export function AboutSection() {
 
             <SkillTree />
 
-            <div className="mt-10 space-y-3 font-mono text-xs text-muted">
-              <div className="flex justify-between">
-                <span>Based in</span>
-                <span className="text-foreground">{about.location}</span>
+            {/* live status panel — current role pulled from experience data */}
+            <div className="mt-10 rounded-xl border border-border bg-card/40 p-4 font-mono text-xs">
+              <div className="flex items-center gap-2 mb-3 uppercase tracking-[0.25em] text-muted">
+                <span className="size-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(200,255,61,0.8)]" />
+                <span>Status</span>
+                <span className="text-muted/40">·</span>
+                <span className="text-accent">Available</span>
               </div>
-              <div className="flex justify-between">
-                <span>Open to</span>
-                <span className="text-foreground">Product · Game · Motion</span>
-              </div>
+              <dl className="space-y-2.5 text-muted">
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0">Now</dt>
+                  <dd className="text-foreground text-right">
+                    {experience[0].role} · {experience[0].company}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0">Based</dt>
+                  <dd className="text-foreground text-right">
+                    {about.location} · UTC+5:30
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="shrink-0">Open to</dt>
+                  <dd className="text-foreground text-right">
+                    Product · Game · Motion
+                  </dd>
+                </div>
+              </dl>
             </div>
           </aside>
         </div>
