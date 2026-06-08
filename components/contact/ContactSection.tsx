@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, type Variants } from "motion/react";
 import { socials } from "@/content/socials";
+import { sound } from "@/lib/sound";
 
 const EMAIL = "a.divyansh.25@gmail.com";
 // Google Drive direct-download URL (the `uc?export=download&id=...` form
@@ -218,6 +219,7 @@ export function ContactSection() {
             <a
               ref={magnetTargetRef}
               href={`mailto:${EMAIL}`}
+              onClick={() => sound.play("coin")}
               className="group relative inline-flex items-baseline gap-3 sm:gap-5 font-display font-medium text-foreground hover:text-accent w-fit max-w-full break-all will-change-transform"
               style={{
                 fontSize: "clamp(1.25rem, 4.5vw, 3rem)",

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { smoothScrollTo } from "@/lib/scroll";
+import { SoundToggle } from "./SoundToggle";
 
 const links = [
   { href: "#about", label: "About" },
@@ -126,30 +127,34 @@ export function Nav() {
             ))}
           </ul>
 
-          <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted">
-            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-            <span>{time} IST</span>
-          </div>
+          {/* right cluster — sound toggle, live time (desktop), hamburger */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted">
+              <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+              <span>{time} IST</span>
+            </div>
+            <SoundToggle />
 
-          {/* mobile hamburger */}
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="md:hidden relative w-9 h-9 grid place-items-center -mr-2"
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-          >
-            <span
-              className={`absolute left-1/2 -translate-x-1/2 w-5 h-px bg-foreground transition-all duration-300 ${
-                open ? "rotate-45" : "-translate-y-1.5"
-              }`}
-            />
-            <span
-              className={`absolute left-1/2 -translate-x-1/2 w-5 h-px bg-foreground transition-all duration-300 ${
-                open ? "-rotate-45" : "translate-y-1.5"
-              }`}
-            />
-          </button>
+            {/* mobile hamburger */}
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="md:hidden relative w-9 h-9 grid place-items-center -mr-2"
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+            >
+              <span
+                className={`absolute left-1/2 -translate-x-1/2 w-5 h-px bg-foreground transition-all duration-300 ${
+                  open ? "rotate-45" : "-translate-y-1.5"
+                }`}
+              />
+              <span
+                className={`absolute left-1/2 -translate-x-1/2 w-5 h-px bg-foreground transition-all duration-300 ${
+                  open ? "-rotate-45" : "translate-y-1.5"
+                }`}
+              />
+            </button>
+          </div>
         </div>
       </nav>
 
