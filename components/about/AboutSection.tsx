@@ -28,6 +28,47 @@ export function AboutSection() {
           </div>
 
           <aside className="md:col-span-5 md:pl-10 md:border-l border-border">
+            {/* CRT portrait — the operator behind the channels (CH·00),
+                phosphor-treated to live on the same screen as the hero TV */}
+            <figure className="relative mb-8 max-w-[320px] rounded-xl overflow-hidden border border-border bg-black group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/portrait.jpg"
+                alt="Divyansh Agarwal"
+                width={900}
+                height={900}
+                className="block w-full aspect-square object-cover transition-[filter] duration-500 group-hover:brightness-110"
+              />
+              {/* live scanline sweep */}
+              <span aria-hidden className="portrait-scan pointer-events-none absolute inset-0" />
+              {/* caption bar — channel ID */}
+              <figcaption className="absolute bottom-0 inset-x-0 flex items-center justify-between px-3 py-2 bg-gradient-to-t from-black/85 to-transparent font-mono text-[10px] uppercase tracking-widest">
+                <span className="flex items-center gap-1.5 text-accent">
+                  <span className="size-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgba(200,255,61,0.8)]" />
+                  Live
+                </span>
+                <span className="text-foreground/90">CH·00 · Divyansh</span>
+              </figcaption>
+              {/* corner ticks */}
+              {(["tl", "tr"] as const).map((c) => (
+                <span
+                  key={c}
+                  aria-hidden
+                  className="absolute size-2.5"
+                  style={{
+                    top: 8,
+                    left: c === "tl" ? 8 : "auto",
+                    right: c === "tr" ? 8 : "auto",
+                    borderStyle: "solid",
+                    borderColor: "rgba(200,255,61,0.5)",
+                    borderTopWidth: 1,
+                    borderLeftWidth: c === "tl" ? 1 : 0,
+                    borderRightWidth: c === "tr" ? 1 : 0,
+                  }}
+                />
+              ))}
+            </figure>
+
             <div className="mb-5 md:mb-6">
               <p className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-muted">
                 Toolbelt
