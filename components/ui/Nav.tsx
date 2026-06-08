@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { smoothScrollTo } from "@/lib/scroll";
-import { SoundToggle } from "./SoundToggle";
 
 const links = [
   { href: "#about", label: "About" },
@@ -127,13 +126,12 @@ export function Nav() {
             ))}
           </ul>
 
-          {/* right cluster — sound toggle, live time (desktop), hamburger */}
+          {/* right cluster — live time (desktop), hamburger */}
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted">
               <span className="size-1.5 rounded-full bg-accent animate-pulse" />
               <span>{time} IST</span>
             </div>
-            <SoundToggle />
 
             {/* mobile hamburger */}
             <button

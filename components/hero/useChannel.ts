@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { smoothScrollTo } from "@/lib/scroll";
-import { sound } from "@/lib/sound";
 
 // CH·01 INTRO  → typewriter visible, snake hidden behind it (boot screen)
 // CH·02 GAME   → typewriter gone, snake live, no scroll
@@ -24,7 +23,6 @@ const listeners = new Set<(c: number) => void>();
 
 export function setChannel(c: number) {
   current = ((c % CHANNELS.length) + CHANNELS.length) % CHANNELS.length;
-  sound.play("click"); // knob/channel turn (no-op when muted)
   listeners.forEach((l) => l(current));
   const target = CHANNELS[current].section;
   if (target) {

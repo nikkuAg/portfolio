@@ -6,7 +6,6 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { experience, type ExperienceItem } from "@/content/experience";
 import { TYPE_TINT } from "./experience-tints";
-import { sound } from "@/lib/sound";
 
 // newest first (resume convention) — gate 01 is the current role, and the
 // flight travels backwards through time toward the earliest internship
@@ -114,7 +113,6 @@ export function ExperienceScene({
 // feedback is local: each gate glows as the camera passes through it
 // (see the proximity boost in Gate).
 function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
-  const lastPlane = useRef(-1);
   useFrame((state) => {
     const p = progressRef.current ?? 0;
     const cam = state.camera;
@@ -126,13 +124,6 @@ function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
     const swayY = Math.sin(p * Math.PI * 1.3) * 0.4;
     cam.position.set(swayX, swayY, z);
     cam.lookAt(swayX * 0.4, swayY * 0.4 + GATE_Y * 0.4, z - GATE_SPACING);
-
-    // whoosh as the camera crosses each gate plane (no-op when muted)
-    const plane = Math.round(THREE.MathUtils.clamp(-z / GATE_SPACING, 0, N - 1));
-    if (plane !== lastPlane.current) {
-      if (lastPlane.current !== -1) sound.play("whoosh");
-      lastPlane.current = plane;
-    }
   });
 
   return null;
