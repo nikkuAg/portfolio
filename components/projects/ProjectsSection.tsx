@@ -196,24 +196,35 @@ export function ProjectsSection() {
 
 function ProjectsMobileCarousel() {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeIdx, setActiveIdx] = useState(0);
 
-  // sync the header counter with whichever card the horizontal snap landed
-  // on. clientWidth is the carousel viewport width; scrollLeft / width gives
-  // the float index — round to land on the nearest card.
+  // deck depth on touch: the centred card sits full-size while neighbours
+  // scale down + dim, driven by the live scroll position (DOM-direct, no
+  // re-render per frame). Brings some of the desktop deck's depth to mobile.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     let raf = 0;
+    const applyDepth = (pos: number) => {
+      cardRefs.current.forEach((c, i) => {
+        if (!c) return;
+        const d = Math.min(1, Math.abs(i - pos));
+        c.style.transform = `scale(${1 - d * 0.12})`;
+        c.style.opacity = String(1 - d * 0.45);
+      });
+    };
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const w = el.clientWidth;
         if (!w) return;
-        const idx = Math.round(el.scrollLeft / w);
-        setActiveIdx(Math.max(0, Math.min(N - 1, idx)));
+        const pos = el.scrollLeft / w;
+        setActiveIdx(Math.max(0, Math.min(N - 1, Math.round(pos))));
+        applyDepth(pos);
       });
     };
+    applyDepth(0); // initial framing
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       el.removeEventListener("scroll", onScroll);
@@ -256,7 +267,10 @@ function ProjectsMobileCarousel() {
         {projects.map((p, i) => (
           <div
             key={p.slug}
-            className="w-full flex-shrink-0 snap-center flex"
+            ref={(el) => {
+              cardRefs.current[i] = el;
+            }}
+            className="w-full flex-shrink-0 snap-center flex origin-center will-change-transform transition-[transform,opacity] duration-150"
           >
             <MobileProjectCard project={p} index={i} />
           </div>
