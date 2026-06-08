@@ -54,7 +54,7 @@ export function AboutSection() {
                 <div className="flex justify-between gap-4">
                   <dt className="shrink-0">Open to</dt>
                   <dd className="text-foreground text-right">
-                    Product · Game · Motion
+                    Full-Stack · Game Dev
                   </dd>
                 </div>
               </dl>
