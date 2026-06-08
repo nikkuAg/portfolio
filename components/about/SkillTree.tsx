@@ -220,6 +220,16 @@ export function SkillTree() {
 
       {/* root node */}
       <div className="relative pl-6 mb-7">
+        {!reduced && (
+          <span
+            aria-hidden
+            className="skill-node-pulse absolute left-[-3px] top-[1px] size-4 rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(200,255,61,0.7), transparent 70%)",
+            }}
+          />
+        )}
         <span
           aria-hidden
           className="absolute left-0 top-1 size-2.5 rotate-45 bg-accent"
@@ -239,7 +249,7 @@ export function SkillTree() {
         animate={animateState}
         className="flex flex-col gap-7"
       >
-        {BRANCHES.map((b) => {
+        {BRANCHES.map((b, bi) => {
           const dimmed = active !== null && active !== b.id;
           return (
             <motion.div
@@ -250,6 +260,17 @@ export function SkillTree() {
               className="relative pl-6 transition-opacity duration-300"
               style={{ opacity: dimmed ? 0.3 : 1 }}
             >
+              {/* soft signal halo pulsing behind the node */}
+              {!reduced && (
+                <span
+                  aria-hidden
+                  className="skill-node-pulse absolute left-[-2px] top-[2px] size-3.5 rounded-full pointer-events-none"
+                  style={{
+                    background: `radial-gradient(circle, rgba(${b.rgb},0.7), transparent 70%)`,
+                    animationDelay: `${bi * 0.7}s`,
+                  }}
+                />
+              )}
               {/* branch node on the trunk */}
               <span
                 aria-hidden
@@ -274,6 +295,8 @@ export function SkillTree() {
                     <motion.li
                       key={s.label}
                       variants={chipV}
+                      whileHover={{ scale: 1.08 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
                       ref={(el) => {
                         if (el)
                           chipRefs.current[i] = {

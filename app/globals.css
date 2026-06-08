@@ -224,6 +224,28 @@ html.lenis body {
   }
 }
 
+/* skill-tree node halo — a soft signal pulse behind each branch/root node
+   (separate element so it doesn't fight the node's own glow) */
+@keyframes skill-node-pulse {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.18;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.55;
+  }
+}
+.skill-node-pulse {
+  animation: skill-node-pulse 3s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skill-node-pulse {
+    animation: none !important;
+  }
+}
+
 /* contact-section marquee — endless horizontal scroll, content is duplicated
    in markup so the -50% translate produces a seamless loop */
 @keyframes contact-marquee {

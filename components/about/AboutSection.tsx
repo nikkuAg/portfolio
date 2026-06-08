@@ -28,12 +28,6 @@ export function AboutSection() {
           </div>
 
           <aside className="md:col-span-5 md:pl-10 md:border-l border-border">
-            <div className="mb-5 md:mb-6">
-              <p className="font-mono text-[10px] sm:text-xs uppercase tracking-widest text-muted">
-                Toolbelt
-              </p>
-            </div>
-
             <SkillTree />
 
             {/* live status panel — current role pulled from experience data */}
