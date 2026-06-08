@@ -270,7 +270,7 @@ function ProjectsMobileCarousel() {
             ref={(el) => {
               cardRefs.current[i] = el;
             }}
-            className="w-full flex-shrink-0 snap-center flex origin-center will-change-transform transition-[transform,opacity] duration-150"
+            className="w-full flex-shrink-0 snap-center flex origin-center will-change-transform"
           >
             <MobileProjectCard project={p} index={i} />
           </div>
