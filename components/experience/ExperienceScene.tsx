@@ -807,6 +807,13 @@ function mulberry32(seed: number) {
 // "lightspeed" effect. Implemented as a second LineSegments layer sharing
 // the same particle positions; its tail vertices get pushed along z every
 // frame and its opacity ramps with speed (invisible when parked).
+// brand color per gate (for the lightspeed streak tint), and a white to
+// blend toward so dark brand colors still read on the black void
+const STREAK_WHITE = new THREE.Color("#f5f5f5");
+const GATE_TINTS = ROLES.map(
+  (r) => new THREE.Color(r.color ?? TYPE_TINT[r.type]),
+);
+
 function ChalkDust({
   compact,
   progressRef,
@@ -819,6 +826,8 @@ function ChalkDust({
   const streaksRef = useRef<THREE.LineSegments>(null);
   const prevP = useRef<number | null>(null);
   const vel = useRef(0); // damped camera velocity, world units/s
+  const streakCol = useRef(new THREE.Color("#f5f5f5"));
+  const tmpCol = useRef(new THREE.Color());
 
   const count = compact ? 260 : 800;
 
@@ -871,7 +880,13 @@ function ChalkDust({
       }
       attr.needsUpdate = true;
       const mat = streaks.material as THREE.LineBasicMaterial;
-      mat.opacity = THREE.MathUtils.clamp((speed - 2) * 0.04, 0, 0.5);
+      mat.opacity = THREE.MathUtils.clamp((speed - 2) * 0.045, 0, 0.6);
+      // tint streaks toward the gate you're flying into (blended toward
+      // white so dark brand colors stay visible); damped for smoothness
+      const idx = Math.round(THREE.MathUtils.clamp(p, 0, 1) * (N - 1));
+      tmpCol.current.copy(GATE_TINTS[idx]).lerp(STREAK_WHITE, 0.4);
+      streakCol.current.lerp(tmpCol.current, 1 - Math.exp(-5 * dt));
+      mat.color.copy(streakCol.current);
     }
 
     // motes hand over to streaks as speed rises
@@ -910,6 +925,8 @@ function ChalkDust({
           color={CHALK}
           transparent
           opacity={0}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
           depthWrite={false}
         />
       </lineSegments>
