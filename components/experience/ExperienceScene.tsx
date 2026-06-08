@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
+import { EffectComposer, Bloom, DepthOfField } from "@react-three/postprocessing";
+import type { DepthOfFieldEffect } from "postprocessing";
 import { experience, type ExperienceItem } from "@/content/experience";
 import { TYPE_TINT } from "./experience-tints";
 
@@ -54,6 +55,10 @@ export function ExperienceScene({
   compact,
   active,
 }: ExperienceSceneProps) {
+  // we mutate the DoF focus distance each frame so the viewed gate stays
+  // sharp and the gates behind it blur out (stops their logos conflicting
+  // with the focused card)
+  const dofRef = useRef<DepthOfFieldEffect | null>(null);
   return (
     <Canvas
       frameloop={active ? "always" : "never"}
@@ -88,12 +93,19 @@ export function ExperienceScene({
 
       <Floor compact={compact} />
       <ChalkDust compact={compact} progressRef={progressRef} />
-      <Rig progressRef={progressRef} />
+      <Rig progressRef={progressRef} dofRef={dofRef} />
 
-      {/* gentle phosphor halo on the chalk strokes — desktop only. Compact
-          compensates with slightly stronger stroke/membrane opacities. */}
+      {/* phosphor halo + depth-of-field — desktop only. DoF keeps the viewed
+          gate sharp and blurs the gates behind it so their logos stop
+          fighting the focused card. */}
       {!compact && (
         <EffectComposer>
+          <DepthOfField
+            ref={dofRef}
+            worldFocusDistance={STANDOFF}
+            worldFocusRange={5}
+            bokehScale={2.6}
+          />
           <Bloom
             mipmapBlur
             intensity={0.55}
@@ -112,18 +124,33 @@ export function ExperienceScene({
 // no fullscreen flash/wash here — the void stays pure black. Crossing
 // feedback is local: each gate glows as the camera passes through it
 // (see the proximity boost in Gate).
-function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
+function Rig({
+  progressRef,
+  dofRef,
+}: {
+  progressRef: React.RefObject<number>;
+  dofRef: React.RefObject<DepthOfFieldEffect | null>;
+}) {
   useFrame((state) => {
     const p = progressRef.current ?? 0;
     const cam = state.camera;
 
     // dolly: p=0 rests STANDOFF before gate 0, p=1 STANDOFF before the last.
-    // Gentle sine sway on x/y so it reads as flight, not an elevator.
+    // Wider sine sway on x/y so the flight banks and drifts between gates.
     const z = STANDOFF - p * TRAVEL;
-    const swayX = Math.sin(p * Math.PI * 2.2) * 0.5;
-    const swayY = Math.sin(p * Math.PI * 1.3) * 0.25;
+    const swayX = Math.sin(p * Math.PI * 2.2) * 0.95;
+    const swayY = Math.sin(p * Math.PI * 1.3) * 0.4;
     cam.position.set(swayX, swayY, z);
-    cam.lookAt(swayX * 0.35, swayY * 0.35 + GATE_Y * 0.4, z - GATE_SPACING);
+    cam.lookAt(swayX * 0.4, swayY * 0.4 + GATE_Y * 0.4, z - GATE_SPACING);
+
+    // keep depth-of-field focused on the gate currently being viewed, so
+    // the gates behind it blur and their logos don't conflict
+    const dof = dofRef.current;
+    if (dof) {
+      const idx = Math.round(THREE.MathUtils.clamp(p, 0, 1) * (N - 1));
+      const focusDist = Math.abs(z - -idx * GATE_SPACING);
+      dof.cocMaterial.worldFocusDistance = Math.max(focusDist, 0.3);
+    }
   });
 
   return null;
