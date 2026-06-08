@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { EffectComposer, Bloom, DepthOfField } from "@react-three/postprocessing";
-import type { DepthOfFieldEffect } from "postprocessing";
+import { EffectComposer, Bloom } from "@react-three/postprocessing";
 import { experience, type ExperienceItem } from "@/content/experience";
 import { TYPE_TINT } from "./experience-tints";
 
@@ -55,10 +54,6 @@ export function ExperienceScene({
   compact,
   active,
 }: ExperienceSceneProps) {
-  // we mutate the DoF focus distance each frame so the viewed gate stays
-  // sharp and the gates behind it blur out (stops their logos conflicting
-  // with the focused card)
-  const dofRef = useRef<DepthOfFieldEffect | null>(null);
   return (
     <Canvas
       frameloop={active ? "always" : "never"}
@@ -93,19 +88,12 @@ export function ExperienceScene({
 
       <Floor compact={compact} />
       <ChalkDust compact={compact} progressRef={progressRef} />
-      <Rig progressRef={progressRef} dofRef={dofRef} />
+      <Rig progressRef={progressRef} />
 
-      {/* phosphor halo + depth-of-field — desktop only. DoF keeps the viewed
-          gate sharp and blurs the gates behind it so their logos stop
-          fighting the focused card. */}
+      {/* gentle phosphor halo on the chalk strokes — desktop only. Compact
+          compensates with slightly stronger stroke/membrane opacities. */}
       {!compact && (
         <EffectComposer>
-          <DepthOfField
-            ref={dofRef}
-            worldFocusDistance={STANDOFF}
-            worldFocusRange={12}
-            bokehScale={1.8}
-          />
           <Bloom
             mipmapBlur
             intensity={0.55}
@@ -124,13 +112,7 @@ export function ExperienceScene({
 // no fullscreen flash/wash here — the void stays pure black. Crossing
 // feedback is local: each gate glows as the camera passes through it
 // (see the proximity boost in Gate).
-function Rig({
-  progressRef,
-  dofRef,
-}: {
-  progressRef: React.RefObject<number>;
-  dofRef: React.RefObject<DepthOfFieldEffect | null>;
-}) {
+function Rig({ progressRef }: { progressRef: React.RefObject<number> }) {
   useFrame((state) => {
     const p = progressRef.current ?? 0;
     const cam = state.camera;
@@ -142,15 +124,6 @@ function Rig({
     const swayY = Math.sin(p * Math.PI * 1.3) * 0.4;
     cam.position.set(swayX, swayY, z);
     cam.lookAt(swayX * 0.4, swayY * 0.4 + GATE_Y * 0.4, z - GATE_SPACING);
-
-    // keep depth-of-field focused on the gate currently being viewed, so
-    // the gates behind it blur and their logos don't conflict
-    const dof = dofRef.current;
-    if (dof) {
-      const idx = Math.round(THREE.MathUtils.clamp(p, 0, 1) * (N - 1));
-      const focusDist = Math.abs(z - -idx * GATE_SPACING);
-      dof.cocMaterial.worldFocusDistance = Math.max(focusDist, 0.3);
-    }
   });
 
   return null;
@@ -277,6 +250,10 @@ function Gate({
   const ticksRef = useRef<THREE.Group>(null);
   const frameRef = useRef<THREE.Line>(null);
   const membraneRef = useRef<THREE.Mesh>(null);
+  // wraps the logo + label so they can fade out while this gate sits behind
+  // the one being viewed (seen through its portal), and fade back as you
+  // approach. Keeps the focused gate's mark crisp and the void uncluttered.
+  const markRef = useRef<THREE.Group>(null);
   // per-company brand color wins; otherwise the type-based tint. Drives the
   // membrane gradient, ticks, crossing glow, and logo — the frame/brackets
   // stay accent lime so the structure reads as one system.
@@ -357,6 +334,25 @@ function Gate({
       const mat = membrane.material as THREE.MeshBasicMaterial;
       mat.opacity = Math.min(1, (compact ? 0.6 : 0.5) + cross * 0.5);
     }
+
+    // fade the mark (logo + label) when this gate is BEHIND the viewed one,
+    // so its logo stops punching through the focused portal. rel>0 = deeper
+    // than the current gate (seen through it); fades to ~0 by one gate back.
+    const mark = markRef.current;
+    if (mark) {
+      const rel = index - vIdx;
+      const fade =
+        rel <= 0.4
+          ? 1
+          : THREE.MathUtils.clamp(1 - (rel - 0.4) / 0.7, 0, 1);
+      mark.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.MeshBasicMaterial;
+        if (m && typeof m.opacity === "number") {
+          if (m.userData.__base === undefined) m.userData.__base = m.opacity;
+          m.opacity = (m.userData.__base as number) * fade;
+        }
+      });
+    }
   });
 
   return (
@@ -386,14 +382,17 @@ function Gate({
       <Membrane tint={tint} compact={compact} membraneRef={membraneRef} />
 
       {/* portal mark — the company logo (white silhouette) if we have one,
-          otherwise the company name set as a wordmark so no gate is blank */}
-      {role.logo ? (
-        <GateLogo src={role.logo} />
-      ) : (
-        <GateWordmark text={role.company} />
-      )}
-
-      <GateLabel role={role} index={index} tint={tint} />
+          otherwise the company name set as a wordmark so no gate is blank.
+          Grouped with the label so both fade when this gate is behind the
+          one being viewed. */}
+      <group ref={markRef}>
+        {role.logo ? (
+          <GateLogo src={role.logo} />
+        ) : (
+          <GateWordmark text={role.company} />
+        )}
+        <GateLabel role={role} index={index} tint={tint} />
+      </group>
     </group>
   );
 }
