@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { smoothScrollTo } from "@/lib/scroll";
+import { RESUME_URL } from "@/lib/site";
 
 const links = [
   { href: "#about", label: "About" },
@@ -13,7 +14,6 @@ const links = [
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
-  const [time, setTime] = useState<string>("");
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -21,22 +21,6 @@ export function Nav() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      setTime(
-        now.toLocaleTimeString("en-US", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }),
-      );
-    };
-    tick();
-    const id = setInterval(tick, 30 * 1000);
-    return () => clearInterval(id);
   }, []);
 
   // lock body scroll when drawer is open
@@ -106,12 +90,19 @@ export function Nav() {
             ))}
           </ul>
 
-          {/* right cluster — live time (desktop), hamburger */}
+          {/* right cluster — resume (desktop), hamburger */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden md:flex items-center gap-2 text-xs font-mono text-muted">
-              <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-              <span>{time} IST</span>
-            </div>
+            <a
+              href={RESUME_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border text-muted hover:border-accent/60 hover:text-foreground font-mono text-[11px] uppercase tracking-widest transition-colors"
+            >
+              <span className="text-accent inline-block transition-transform duration-300 group-hover:translate-y-0.5">
+                ↓
+              </span>
+              Resume
+            </a>
 
             {/* mobile hamburger */}
             <button
@@ -170,11 +161,16 @@ export function Nav() {
                   </a>
                 </li>
               ))}
-              <li className="mt-8 flex items-center font-mono text-[11px] uppercase tracking-widest text-muted">
-                <span className="flex items-center gap-2">
-                  <span className="size-1.5 rounded-full bg-accent animate-pulse" />
-                  {time} IST
-                </span>
+              <li className="mt-8">
+                <a
+                  href={RESUME_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border hover:border-accent/60 font-mono text-xs uppercase tracking-widest text-foreground transition-colors"
+                >
+                  <span className="text-accent">↓</span> Resume
+                </a>
               </li>
             </motion.ul>
           </motion.div>

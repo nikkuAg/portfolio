@@ -3,14 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, type Variants } from "motion/react";
 import { socials } from "@/content/socials";
+import { RESUME_URL } from "@/lib/site";
 
 const EMAIL = "a.divyansh.25@gmail.com";
-// Google Drive direct-download URL (the `uc?export=download&id=...` form
-// triggers a download instead of opening Drive's viewer). Swap to
-// `/resume.pdf` once a local copy lands in `public/` — local file is
-// cleaner UX (instant download, no third-party redirect).
-const RESUME_HREF =
-  "https://drive.google.com/uc?export=download&id=1LmN7IdIaGeu19aP3AjNrKh3LBXWF_Rru";
 
 const HEADING_WORDS = ["Let's", "build", "something", "good."];
 
@@ -115,7 +110,7 @@ export function ContactSection() {
     download?: boolean;
   }[] = [
     ...elsewhere.map((s) => ({ label: s.label, handle: s.handle, href: s.href })),
-    { label: "Resume", handle: ".pdf", href: RESUME_HREF, download: true },
+    { label: "Resume", handle: ".pdf", href: RESUME_URL, download: true },
   ];
 
   return (
