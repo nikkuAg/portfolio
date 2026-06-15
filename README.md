@@ -14,10 +14,10 @@ The personal portfolio of **Divyansh Agarwal** (`@nikkuAg`) — full-stack engin
 | # | Section | Centerpiece |
 |---|---------|-------------|
 | 00 | **Hero** | A working CRT television. Snake auto-pilots in the background; an italic-serif typewriter introduces the site, then hover the screen to take over the controls (arrows / WASD, space to pause). |
-| 01 | **About** | An editorial bio next to a force-directed **skill constellation** — chips connected by phosphor lines, each chip drifting on its own noise frequency so the graph never sits still. |
+| 01 | **About** | An editorial bio next to a game-style **skill tree** — a glowing trunk with FRONT / INFRA / GAME branch nodes that "boot up" on scroll (trunk draws down, scan sweep, chips stagger in), pulsing node halos, and a cursor-proximity glow that lights chips in their branch colour. A live status panel sits below. |
 | 02 | **Projects** | A scroll-pinned **card deck**. Each scroll tick flicks the top card off with a spring rotation; the next card pops up while the side panel crossfades to its detail. Click a card behind the top to jump to it. |
 | 03 | **Experience** | A first-person **3D dimension flight** (R3F). Scrolling flies you through one card-shaped portal gate per role, newest first, backwards through time — dashed chalk frames, role-tinted ticks travelling the outline, chalk dust that streaks into lightspeed with scroll velocity, and a HUD card that swaps at every gate crossing. Falls back to a clean vertical timeline for reduced-motion / no-WebGL. |
-| 04 | **Contact** | The **arcade end screen** — `RUN COMPLETE`, a magnetic email CTA, socials as an `OTHER CHANNELS` list (`CH·01–05`, the last channel blinking open for *you*), player stats, a hand-drawn signature that draws itself in, and an end-of-broadcast ticker. |
+| 04 | **Contact** | The **arcade end screen** — `RUN COMPLETE`, a magnetic email CTA, socials as an `OTHER CHANNELS` list (`CH·01…` per channel), player stats, a hand-drawn signature that draws itself in, and an end-of-broadcast ticker. |
 | -- | **Loader** | A CRT power-on/off sequence on entry — line-zap → screen open → load counter + scanlines → vertical collapse → horizontal collapse → phosphor dot. Skipped on revisit (sessionStorage). |
 
 The whole experience runs under a custom cursor (lime dot + ring with mix-blend-mode interaction states), Lenis smooth scroll, and a phosphor lime palette (`#c8ff3d`) on dark.
@@ -70,22 +70,22 @@ portfolio/
 │
 ├── components/
 │   ├── hero/                  # CRT screen, snake, hero overlay, GLSL shader
-│   ├── about/                 # SkillsConstellation (force-directed graph)
-│   ├── projects/              # ProjectsSection (scroll-pinned card deck)
+│   ├── about/                 # AboutSection + SkillTree (game skill tree)
+│   ├── projects/              # ProjectsSection (deck on desktop, carousel on mobile)
 │   ├── experience/            # ExperienceSection (3D portal-gate flight + fallback)
 │   ├── contact/               # ContactSection (arcade end screen + signature)
 │   ├── footer/                # Footer
 │   ├── seo/                   # JSON-LD structured data
-│   ├── ui/                    # Loader, custom cursor, etc.
+│   ├── ui/                    # Nav, Loader, custom cursor, etc.
 │   └── providers/             # Lenis provider, etc.
 │
 ├── content/                   # ←—— ALL site copy lives here
 │   ├── about.ts               # bio paragraphs + tagline + skills array
-│   ├── experience.ts          # 11 roles (newest first)
+│   ├── experience.ts          # roles (newest first) + per-company color/logo
 │   ├── projects.ts            # project list
 │   └── socials.ts             # email, GitHub, LinkedIn, phone
 │
-├── lib/                       # utilities
+├── lib/                       # utilities — site constants, scroll, scroll-snap hook
 ├── public/                    # static assets
 ├── .claude/commands/          # Claude Code slash commands (incl. /content)
 ├── AGENTS.md                  # heads-up note for AI assistants
@@ -115,10 +115,12 @@ If you're not using Claude Code, just edit the four `content/*.ts` files — the
 ## Notable interactions
 
 - **Snake works.** Hover the CRT after the typewriter completes to dismiss the overlay. Then arrows or WASD to play, space to pause, R to restart.
-- **The constellation drifts.** Each chip carries its own random noise phase + frequency, so the graph never visually settles. Hover any chip to highlight its neighbors.
+- **The skill tree boots up.** On scroll into view the trunk draws down, a scan sweep passes, and the chips stagger in; node halos pulse, and a cursor-proximity field lights chips in their branch colour.
 - **Scrolling drives both Projects and Experience.** Both sections pin for multiple viewports of scroll, and a shared Lenis-aware snap hook (`lib/useScrollSnap.ts`) settles the page onto whole cards / gates whenever you pause.
 - **Custom cursor disappears on touch.** The whole `cursor: none !important` rule is gated on `@media (pointer: fine)`.
-- **`prefers-reduced-motion`** is honored throughout — the loader skips, the 3D flight swaps to a static timeline, marquees freeze, and the constellation noise turns off.
+- **Mobile is first-class.** The 3D flight runs at compact fidelity, the project deck becomes a depth-scaled swipe carousel, and the rest reflows; only cursor-bound effects (proximity glow, magnetic email) drop off.
+- **`prefers-reduced-motion`** is honored throughout — the loader skips, the 3D flight swaps to a static timeline, marquees freeze, and the skill-tree animations turn off.
+- **Accessibility.** Skip-to-content link, a visible `:focus-visible` ring (the custom cursor hides the pointer), aria-labelled controls, and sr-only text lists behind the 3D sections.
 
 ---
 
