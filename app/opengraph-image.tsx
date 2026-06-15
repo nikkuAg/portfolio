@@ -14,7 +14,7 @@ export const contentType = "image/png";
 // the site, dot grain included.
 export default async function OG() {
   const [sig, mark] = await Promise.all([
-    readFile(join(process.cwd(), "public/signature.png")),
+    readFile(join(process.cwd(), "public/signature-full.png")),
     readFile(join(process.cwd(), "public/da-512.png")),
   ]);
   const sigSrc = `data:image/png;base64,${sig.toString("base64")}`;
@@ -78,7 +78,7 @@ export default async function OG() {
           }}
         >
           { }
-          <img src={sigSrc} width={560} alt="" />
+          <img src={sigSrc} width={800} alt="" />
         </div>
 
         {/* footer row — role + domain */}
