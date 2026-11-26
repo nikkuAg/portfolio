@@ -172,7 +172,8 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
   const tx = new Float32Array(n);
   const ty = new Float32Array(n);
   if (!xs.length) return null;
-  const maxW = Math.max(...ws);
+  let maxW = 0;
+  for (const v of ws) if (v > maxW) maxW = v;
   for (let i = 0; i < n; i++) {
     let j = 0;
     for (let tries = 0; tries < 30; tries++) {

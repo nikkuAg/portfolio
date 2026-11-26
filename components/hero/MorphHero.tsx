@@ -41,7 +41,7 @@ export function MorphHero() {
         <MorphField go={go} />
       </div>
       <div className={s.content}>
-        <h1 className={s.name}>
+        <h1 className={s.name} data-hero-name>
           <span className={s.line}>
             <span>Divyansh</span>
           </span>
@@ -49,7 +49,7 @@ export function MorphHero() {
             <span>Agarwal</span>
           </span>
         </h1>
-        <div className={s.side}>
+        <div className={s.side} data-hero-side>
           <p className={s.lede}>
             Full-stack engineer in Bangalore. I build interfaces, the services
             behind them, and small games on the side.

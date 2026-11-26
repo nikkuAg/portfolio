@@ -370,7 +370,10 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
   const tx = new Float32Array(n);
   const ty = new Float32Array(n);
   if (!xs.length) return null;
-  const maxW = Math.max(...ws);
+  // a loop, not Math.max(...ws): a huge screen yields more samples than a
+  // spread can pass as arguments
+  let maxW = 0;
+  for (const v of ws) if (v > maxW) maxW = v;
   for (let i = 0; i < n; i++) {
     let j = 0;
     for (let tries = 0; tries < 30; tries++) {
@@ -384,11 +387,36 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
 }
 
 
-/** Where the picture lives: the upper right on desktop, the top on phones. */
-function pictureBox(w: number, h: number) {
-  if (w < 768) return { x: 8, y: Math.max(64, h * 0.08), w: w - 16, h: h * 0.46 };
-  if (w < 1024) return { x: w * 0.08, y: h * 0.08, w: w * 0.84, h: h * 0.46 };
-  return { x: w * 0.42, y: h * 0.07, w: w * 0.54, h: h * 0.6 };
+/**
+ * Where the picture lives. Rather than fixed percentages, it measures where
+ * the name and the intro actually landed on this screen and fills the space
+ * they leave: the upper right beside the name on wide screens, everything
+ * between the nav and the name when stacked, the right half on a phone held
+ * sideways.
+ */
+function pictureBox(canvas: HTMLCanvasElement, w: number, h: number) {
+  const navClear = 72;
+  const g = w < 640 ? 16 : w < 768 ? 24 : 40;
+  const cr = canvas.getBoundingClientRect();
+  const hero = canvas.closest("section");
+  const topOf = (sel: string) => {
+    const el = hero?.querySelector<HTMLElement>(sel);
+    return el ? el.getBoundingClientRect().top - cr.top : null;
+  };
+  if (w > h && h < 520) {
+    const x = w * 0.5;
+    return { x, y: 60, w: w - x - g, h: h - 60 - 16 };
+  }
+  if (w >= 1024) {
+    // follow the words' frame, which stops growing past 2200px on ultrawides
+    const fl = Math.max(g, (w - 2200) / 2);
+    const fw = w - fl * 2;
+    const x = fl + fw * 0.42;
+    const bottom = Math.min(h * 0.72, (topOf("[data-hero-side]") ?? h * 0.7) - 28);
+    return { x, y: navClear, w: fl + fw - x, h: Math.max(140, bottom - navClear) };
+  }
+  const bottom = (topOf("[data-hero-name]") ?? h * 0.55) - 20;
+  return { x: g / 2, y: navClear - 8, w: w - g, h: Math.max(140, bottom - navClear + 8) };
 }
 
 export function MorphField({ go }: { go: boolean }) {
@@ -457,7 +485,7 @@ export function MorphField({ go }: { go: boolean }) {
       canvas!.width = Math.round(w * dpr);
       canvas!.height = Math.round(h * dpr);
       const mobile = w < 768;
-      box = pictureBox(w, h);
+      box = pictureBox(canvas!, w, h);
       const shape = Math.min(mobile ? 2600 : 5200, (box.w * box.h) / (mobile ? 34 : 46));
       const count = Math.round(shape / 0.62);
       if (count !== n) {
@@ -533,6 +561,9 @@ export function MorphField({ go }: { go: boolean }) {
       const R = Math.max(70, Math.min(w, h) * 0.12);
       const R2 = R * R;
       const ns = 0.0022;
+      // the speed limit grows with the screen, so the ink arrives as quickly
+      // on a 4K monitor as on a laptop
+      const cap = 2.2 * Math.max(1, Math.min(w, h) / 820);
 
       // while a picture holds it stays alive: it breathes (a slow, slight
       // swell), every dot circles its spot, and the whole picture leans a
@@ -590,9 +621,9 @@ export function MorphField({ go }: { go: boolean }) {
         // cap the drift and pull so far-off threads glide in as ink, not
         // as streaks; the pointer's push (below) stays sharp on purpose
         const am = Math.hypot(ax, ay);
-        if (am > 2.2) {
-          ax *= 2.2 / am;
-          ay *= 2.2 / am;
+        if (am > cap) {
+          ax *= cap / am;
+          ay *= cap / am;
         }
         let f = fear[i] * 0.95;
         if (stir) {
