@@ -5,10 +5,10 @@ import s from "./morph.module.css";
 
 // The hero's picture: one swarm of ink threads that keeps drawing who I am.
 // Most threads gather into a picture (my face, then the things I love: F1,
-// games, DJing, cooking, board games, code), hold it, let go and drift into
+// games, DJing, drums, board games, code), hold it, let go and drift into
 // the next; the rest never settle and keep the whole screen inked. While a
 // picture holds it plays: the face looks round, the car launches, the pad
-// is played, the decks are mixed, the food is tossed, the dice are thrown.
+// is played, the decks are mixed, the drums are played, the dice are thrown, the code types itself.
 // The pointer is a predator: threads near it scatter and glow, then come back.
 
 /** Where a held picture's points go at a moment of its hold. */
@@ -20,6 +20,8 @@ type Scene = {
   caption: string;
   draw: (o: CanvasRenderingContext2D, w: number, h: number) => void;
   image?: boolean;
+  /** where on the page it goes, on screens wide enough to choose */
+  place?: "side" | "band" | "left";
   /** Once the picture has landed it keeps playing: this moves each point
    *  (u, v in the drawing's own units) by its part and the time held. */
   move?: Move;
@@ -32,12 +34,7 @@ const ALARMED = "rgba(222,255,140,1)";
 
 const FORM = 2600;
 const HOLD = 4800;
-const DRIFT = 2200;
-const CYCLE = FORM + HOLD + DRIFT;
-
-function identFont() {
-  return getComputedStyle(document.documentElement).getPropertyValue("--font-ident").trim() || "sans-serif";
-}
+const CYCLE = FORM + HOLD;
 
 function hash(x: number, y: number) {
   const v = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
@@ -76,7 +73,7 @@ function turn(out: { x: number; y: number }, u: number, v: number, px: number, p
 
 /** Drawings tag their parts by colour, so each point knows what it belongs to. */
 function part(o: CanvasRenderingContext2D, id: number) {
-  const c = `rgb(${id * 20},255,255)`;
+  const c = `rgb(${id * 8},255,255)`;
   o.fillStyle = c;
   o.strokeStyle = c;
 }
@@ -95,6 +92,7 @@ const face: Scene = {
   id: "face",
   label: "Me",
   caption: "my face",
+  place: "side",
   image: true,
   draw() {},
   move(out, u, v, _p, _i, ht, m) {
@@ -126,6 +124,7 @@ const f1: Scene = {
   id: "f1",
   label: "F1",
   caption: "F1, and Ferrari",
+  place: "band",
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 272, 66, 0.96);
@@ -157,11 +156,20 @@ const f1: Scene = {
     o.closePath();
     o.fill();
     o.fillRect(-90, 14, 182, 3);
-    // rear wing: endplate, two elements, and its pylon
-    o.fillRect(-100, -30, 4, 34);
-    o.fillRect(-100, -30, 22, 4.5);
-    o.fillRect(-98, -21, 20, 3.5);
-    o.fillRect(-84, -17, 3, 19);
+    // rear wing side on: the endplate is a solid panel down to the swan-neck
+    // pylon, with the slot between its two elements cut through
+    o.beginPath();
+    o.moveTo(-104, -33);
+    o.lineTo(-79, -33);
+    o.lineTo(-79, -22);
+    o.lineTo(-85, -16);
+    o.lineTo(-85, 2);
+    o.lineTo(-100, 4);
+    o.closePath();
+    o.fill();
+    o.globalCompositeOperation = "destination-out";
+    o.fillRect(-103, -25.5, 23, 1.8);
+    o.globalCompositeOperation = "source-over";
     // front wing: three elements and an endplate
     o.fillRect(76, 14, 28, 2.6);
     o.fillRect(79, 10, 24, 2.4);
@@ -288,6 +296,7 @@ const games: Scene = {
   id: "games",
   label: "Games",
   caption: "games, played and made",
+  place: "left",
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 136, 70);
@@ -385,6 +394,7 @@ const dj: Scene = {
   id: "dj",
   label: "DJ",
   caption: "DJing, my newest habit",
+  place: "band",
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 204, 100, 0.95);
@@ -514,220 +524,387 @@ const dj: Scene = {
   },
 };
 
-// parts: 1 pan, 4 burner, 5 flames, 6–10 food
-const FOOD: [number, number, number, number][] = [
-  [-52, 5, 5, 0.4],
-  [-40, 3, 6, 1.1],
-  [-27, 4, 5.5, 0.2],
-  [-14, 2, 6, 0.8],
-  [-2, 5, 5, 0.5],
-];
-const PIVOT: [number, number] = [66, 10];
-const cook: Scene = {
-  id: "cook",
-  label: "Cooking",
-  caption: "cooking, mostly for friends",
+// A drum kit, front on. parts: 0 stands and legs, 1 bass drum, 2–3 rack
+// toms, 4 snare, 5 floor tom, 6 top hi-hat, 7 crash, 8 left stick (snare),
+// 9 right stick (hi-hat), 10 bottom hi-hat
+const STICK_L: [number, number] = [-26, -42];
+const STICK_R: [number, number] = [-46, -48];
+const drums: Scene = {
+  id: "drums",
+  label: "Drums",
+  caption: "drums, loudly",
+  place: "side",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 160, 130, 0.94);
-    o.translate(-6, 0);
-    // a sauté pan side on, with a long handle
+    fit(o, w, h, 190, 128, 0.94);
+    o.translate(0, -2);
+    o.lineCap = "round";
+    // stands and legs
+    part(o, 0);
+    o.lineWidth = 2;
+    for (const [x0, y0, x1, y1] of [
+      [-78, 62, -78, -4],
+      [-86, 64, -78, 54],
+      [-70, 64, -78, 54],
+      [70, 62, 70, -34],
+      [62, 64, 70, 54],
+      [78, 64, 70, 54],
+      [-47, 17, -47, 62],
+      [-55, 64, -47, 56],
+      [-39, 64, -47, 56],
+      [37, 32, 37, 62],
+      [59, 32, 59, 62],
+      [-22, 54, -28, 62],
+      [22, 54, 28, 62],
+    ]) {
+      o.beginPath();
+      o.moveTo(x0, y0);
+      o.lineTo(x1, y1);
+      o.stroke();
+    }
+    // bass drum with its hoop
     part(o, 1);
     o.beginPath();
-    o.moveTo(-66, 14);
-    o.lineTo(18, 14);
-    o.lineTo(12, 32);
-    o.quadraticCurveTo(10, 38, 2, 38);
-    o.lineTo(-50, 38);
-    o.quadraticCurveTo(-58, 38, -60, 32);
-    o.closePath();
+    o.arc(0, 30, 30, 0, Math.PI * 2);
     o.fill();
-    o.fillRect(-69, 11, 90, 4); // the rim
-    o.save();
-    o.translate(18, 18);
-    o.rotate(-0.16);
+    o.globalCompositeOperation = "destination-out";
+    o.lineWidth = 2;
     o.beginPath();
-    o.roundRect(0, -4, 60, 8, 4);
-    o.fill();
-    o.restore();
-    // a gas ring: the burner, and a row of flame tongues licking the pan
-    part(o, 4);
-    o.fillRect(-58, 60, 66, 4);
-    part(o, 5);
-    for (const fx of [-50, -38, -26, -14, -2]) {
+    o.arc(0, 30, 25, 0, Math.PI * 2);
+    o.stroke();
+    o.globalCompositeOperation = "source-over";
+    // rack toms, snare, floor tom: shells with a cut line under the hoop
+    const shell = (id: number, x: number, y: number, sw: number, sh: number) => {
+      part(o, id);
       o.beginPath();
-      o.moveTo(fx - 4.5, 60);
-      o.quadraticCurveTo(fx - 5.5, 51, fx + 0.5, 44);
-      o.quadraticCurveTo(fx + 0.5, 51, fx + 4.5, 60);
-      o.closePath();
+      o.roundRect(x, y, sw, sh, 3);
+      o.fill();
+      o.globalCompositeOperation = "destination-out";
+      o.fillRect(x, y + 3, sw, 1.3);
+      o.fillRect(x, y + sh - 4.3, sw, 1.3);
+      o.globalCompositeOperation = "source-over";
+    };
+    shell(2, -28, -19, 23, 15);
+    shell(3, 5, -19, 23, 15);
+    shell(4, -62, 4, 30, 13);
+    shell(5, 34, 6, 28, 26);
+    // hi-hat pair and the crash
+    part(o, 10);
+    o.beginPath();
+    o.ellipse(-78, -3, 17, 2.2, 0, 0, Math.PI * 2);
+    o.fill();
+    part(o, 6);
+    o.beginPath();
+    o.ellipse(-78, -8.5, 17, 2.4, 0, 0, Math.PI * 2);
+    o.fill();
+    o.fillRect(-79, -12, 2, 4);
+    part(o, 7);
+    o.beginPath();
+    o.ellipse(70, -36, 23, 3, -0.2, 0, Math.PI * 2);
+    o.fill();
+    // the sticks, drawn at the moment of the hit
+    o.lineWidth = 3;
+    for (const [id, [hx, hy], tx, ty] of [
+      [8, STICK_L, -46, 2],
+      [9, STICK_R, -72, -11],
+    ] as const) {
+      part(o, id);
+      o.beginPath();
+      o.moveTo(hx, hy);
+      o.lineTo(tx, ty);
+      o.stroke();
+      o.beginPath();
+      o.arc(tx, ty, 2.2, 0, Math.PI * 2);
       o.fill();
     }
-    // what's cooking, piled above the rim
-    FOOD.forEach(([bx, by, r, rot], k) => {
-      part(o, 6 + k);
-      o.save();
-      o.translate(bx, by);
-      o.rotate(rot);
-      o.beginPath();
-      o.roundRect(-r, -r * 0.7, r * 2, r * 1.4, r * 0.5);
-      o.fill();
-      o.restore();
-    });
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
-    // drawing units are offset by the -6 translate above
-    const lu = u + 6;
-    // a toss every 1.8s: the pan flicks, the food flies and lands, it settles
-    const tt = ht < 0.4 ? -1 : mod(ht - 0.4, 1.8);
-    const flick = tt < 0 ? 0 : 0.14 * bump(tt, 0.12, 0.07) - 0.035 * bump(tt, 1.15, 0.08);
-    let x = lu;
-    let y = v;
-    if (p === 5) {
-      const s = 0.8 + 0.4 * noise(lu * 0.2, ht * 7);
-      y = 60 - (60 - v) * s;
-      x = lu + (60 - v) * 0.07 * Math.sin(ht * 9 + lu * 0.3);
-    } else if (p === 1) {
-      turn(out, lu, v, PIVOT[0], PIVOT[1], flick);
+    // a 110 bpm groove: hats on the eighths, snare on 2 and 4, kick on 1 and
+    // 3 (plus the "and" of 3), a crash at the top of every bar
+    const lv = v + 2;
+    const beat = Math.max(0, ht) * (110 / 60);
+    const hat = mod(beat * 2, 1);
+    const snr = mod(beat - 1, 2) / 2;
+    const kick = Math.exp(-mod(beat, 2) * 6) + Math.exp(-mod(beat - 2.5, 4) * 8);
+    const crash = Math.exp(-mod(beat, 4) * 1.1);
+    let x = u;
+    let y = lv;
+    if (p === 9) {
+      turn(out, u, lv, STICK_R[0], STICK_R[1], 0.42 * Math.sin(Math.PI * hat) ** 0.7);
       x = out.x;
       y = out.y;
-    } else if (p >= 6) {
-      const k = p - 6;
-      const [bx, by] = FOOD[k];
-      const fl = tt < 0 ? -1 : (tt - 0.12 - k * 0.04) / 0.95;
-      if (fl > 0 && fl < 1) {
-        const hgt = 4 * fl * (1 - fl) * (40 + ((k * 7) % 3) * 7);
-        turn(out, lu, v, bx, by, fl * Math.PI * 2 * (k % 2 ? 1 : -1));
-        x = out.x + Math.sin(fl * Math.PI * 2) * (k - 2) * 2;
-        y = out.y - hgt;
-      } else {
-        turn(out, lu, v, PIVOT[0], PIVOT[1], flick);
-        x = out.x;
-        y = out.y;
-      }
+    } else if (p === 8) {
+      turn(out, u, lv, STICK_L[0], STICK_L[1], 0.55 * Math.sin(Math.PI * snr) ** 0.6);
+      x = out.x;
+      y = out.y;
+    } else if (p === 4) {
+      const hit = Math.exp(-snr * 2 * 7);
+      x = -47 + (u + 47) * (1 + 0.04 * hit);
+      y = 10.5 + (lv - 10.5) * (1 + 0.12 * hit);
+    } else if (p === 6) {
+      const hit = Math.exp(-hat * 6);
+      turn(out, u, lv, -78, -8.5, 0.05 * hit);
+      x = out.x;
+      y = out.y + 1.6 * hit;
+    } else if (p === 7) {
+      turn(out, u, lv, 70, -36, 0.2 * crash * Math.sin(ht * 17));
+      x = out.x;
+      y = out.y;
+    } else if (p === 1) {
+      const k = 1 + 0.06 * Math.min(1, kick);
+      x = u * k;
+      y = 30 + (lv - 30) * k;
+    } else if (p === 2 || p === 3) {
+      // a quick fill across the toms at the end of each second bar
+      const fill = Math.exp(-mod(beat - (p === 2 ? 7 : 7.5), 8) * 7);
+      const cx = p === 2 ? -16.5 : 16.5;
+      x = cx + (u - cx) * (1 + 0.05 * fill);
+      y = -11.5 + (lv + 11.5) * (1 + 0.14 * fill);
     }
-    out.x = x - 6;
-    out.y = y;
+    out.x = x;
+    out.y = y - 2 + 0.6 * Math.min(1, kick);
   },
 };
 
-// parts: 1 and 2 the dice
-const DICE: [number, number, number][] = [
-  [-24, 6, -0.25],
-  [26, -4, 0.3],
+// Board games: a chessboard in perspective and a short game on it. A pawn
+// pushes, the knight jumps twice, and the king topples: mate. parts: 0 the
+// board, 1 king, 2 knight, 3 pawn that moves, 4 pawn that stays
+/** A point on the board's grid lines (file 0–8 left to right, rank 0–8 near to far). */
+function boardAt(f: number, r: number): [number, number, number] {
+  const z = r / 8;
+  const hw = 96 - z * 34;
+  return [-hw + (f / 8) * 2 * hw, 46 - z * 50, 1 - z * 0.34];
+}
+/** The middle of a square, and how big a piece stands there. */
+const square = (f: number, r: number) => boardAt(f + 0.5, r + 0.5);
+type Piece = "king" | "knight" | "pawn";
+function piecePath(o: CanvasRenderingContext2D, kind: Piece) {
+  o.beginPath();
+  o.roundRect(-8, -4, 16, 4, 1.5);
+  if (kind === "pawn") {
+    o.moveTo(-5.5, -4);
+    o.quadraticCurveTo(-2, -10, -2.6, -14);
+    o.lineTo(2.6, -14);
+    o.quadraticCurveTo(2, -10, 5.5, -4);
+    o.rect(-4.4, -16, 8.8, 2.2);
+    o.moveTo(4.4, -20.4);
+    o.arc(0, -20.4, 4.4, 0, Math.PI * 2);
+  } else if (kind === "king") {
+    o.moveTo(-6.5, -4);
+    o.quadraticCurveTo(-2.5, -16, -4.5, -27);
+    o.lineTo(4.5, -27);
+    o.quadraticCurveTo(2.5, -16, 6.5, -4);
+    o.rect(-5.8, -29.5, 11.6, 2.6);
+    o.moveTo(-5, -29.5);
+    o.lineTo(-6, -33.5);
+    o.quadraticCurveTo(0, -36.5, 6, -33.5);
+    o.lineTo(5, -29.5);
+    o.rect(-1.2, -42, 2.4, 8.5);
+    o.rect(-3.8, -39.6, 7.6, 2.4);
+  } else {
+    o.moveTo(-6.5, -4);
+    o.lineTo(-5.5, -12);
+    o.quadraticCurveTo(-7.5, -21, -3, -28);
+    o.lineTo(-1, -32);
+    o.lineTo(1, -28);
+    o.quadraticCurveTo(6.5, -26.5, 9.5, -19.5);
+    o.lineTo(8.5, -16);
+    o.quadraticCurveTo(5, -16, 2, -17.5);
+    o.quadraticCurveTo(3, -11, 6.5, -4);
+  }
+}
+const PIECES: { id: number; kind: Piece; at: [number, number]; size: number }[] = [
+  { id: 1, kind: "king", at: [4, 6], size: 1.25 },
+  { id: 2, kind: "knight", at: [6, 0], size: 1.25 },
+  { id: 3, kind: "pawn", at: [3, 1], size: 1.25 },
+  { id: 4, kind: "pawn", at: [2, 1], size: 1.25 },
 ];
 const board: Scene = {
   id: "board",
   label: "Board games",
   caption: "board games, the longer the better",
+  place: "left",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 140, 96);
+    fit(o, w, h, 204, 112, 0.95);
     o.translate(0, 8);
-    const die = (k: number, pips: [number, number][]) => {
-      const [cx, cy, rot] = DICE[k];
-      o.save();
-      o.translate(cx, cy);
-      o.rotate(rot);
-      o.globalCompositeOperation = "source-over";
-      part(o, k + 1);
-      o.beginPath();
-      o.roundRect(-20, -20, 40, 40, 8);
-      o.fill();
-      o.globalCompositeOperation = "destination-out";
-      for (const [x, y] of pips) {
+    // the dark squares, and the board's front edge
+    part(o, 0);
+    for (let r = 0; r < 8; r++) {
+      for (let f = 0; f < 8; f++) {
+        if ((f + r) % 2) continue;
+        const c = [boardAt(f, r), boardAt(f + 1, r), boardAt(f + 1, r + 1), boardAt(f, r + 1)];
         o.beginPath();
-        o.arc(x * 10, y * 10, 4, 0, Math.PI * 2);
+        o.moveTo(c[0][0], c[0][1]);
+        for (const [x, y] of c.slice(1)) o.lineTo(x, y);
+        o.closePath();
         o.fill();
       }
+    }
+    o.lineWidth = 1.2;
+    o.beginPath();
+    const corners = [boardAt(0, 0), boardAt(8, 0), boardAt(8, 8), boardAt(0, 8)];
+    o.moveTo(corners[0][0], corners[0][1]);
+    for (const [x, y] of corners.slice(1)) o.lineTo(x, y);
+    o.closePath();
+    o.stroke();
+    o.fillRect(corners[0][0], corners[0][1] + 1, corners[1][0] - corners[0][0], 4);
+    // the pieces, back to front, each with a clear gap round it
+    for (const pc of [...PIECES].sort((a, b) => b.at[1] - a.at[1])) {
+      const [x, y, s] = square(...pc.at);
+      o.save();
+      o.translate(x, y);
+      o.scale(s * pc.size, s * pc.size);
+      o.globalCompositeOperation = "destination-out";
+      o.lineWidth = 3.5;
+      o.lineJoin = "round";
+      piecePath(o, pc.kind);
+      o.stroke();
+      o.fill();
+      o.globalCompositeOperation = "source-over";
+      part(o, pc.id);
+      piecePath(o, pc.kind);
+      o.fill();
       o.restore();
-    };
-    die(0, [[-1, -1], [0, 0], [1, 1]]);
-    die(1, [[-1, -1], [1, -1], [-1, 1], [1, 1], [0, 0]]);
+    }
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
-    // two throws: each die hops, tumbles a few quarter turns, lands and squashes
-    const k = p - 1;
-    if (k < 0 || k > 1) {
-      out.x = u;
-      out.y = v;
-      return;
-    }
-    const [cx, cy0] = DICE[k];
-    const cy = cy0 + 8;
-    const throws: [number, number, number][] =
-      k === 0
-        ? [
-            [0.5, 2, 10],
-            [2.8, -1, -10],
-          ]
-        : [
-            [0.62, -3, -8],
-            [2.92, 2, 8],
-          ];
-    let ang = 0;
+    out.x = u;
+    out.y = v;
+    if (p < 1 || p > 4) return;
+    const pc = PIECES.find((q) => q.id === p)!;
+    const lv = v - 8;
+    const [x0, y0, s0] = square(...pc.at);
+    // where this piece stands now: [file, rank] blended along its moves
+    let f = pc.at[0];
+    let r = pc.at[1];
     let hop = 0;
-    let dx = 0;
-    let squash = 0;
-    for (const [at, turns, slide] of throws) {
-      const tau = clamp((ht - at) / 1.1, 0, 1);
-      ang += easeOut(tau / 0.72) * turns * (Math.PI / 2);
-      hop += tau < 0.62 ? Math.sin((Math.PI * tau) / 0.62) * 24 : tau < 0.86 ? Math.sin((Math.PI * (tau - 0.62)) / 0.24) * 4 : 0;
-      dx += easeOut(tau / 0.8) * slide;
-      squash += bump(tau, 0.63, 0.035) + 0.5 * bump(tau, 0.87, 0.03);
+    let fall = 0;
+    if (p === 3) {
+      r += 2 * smooth(0.5, 1.0, ht);
+    } else if (p === 2) {
+      const j1 = smooth(1.3, 1.95, ht);
+      const j2 = smooth(2.4, 3.05, ht);
+      f += -1 * j1 - 1 * j2;
+      r += 2 * j1 + 2 * j2;
+      hop = 16 * (Math.sin(Math.PI * j1) + Math.sin(Math.PI * j2));
+    } else if (p === 1) {
+      // check, a wobble, then it falls
+      const wob = 0.12 * Math.sin((ht - 3.2) * 30) * (smooth(3.2, 3.3, ht) - smooth(3.5, 3.6, ht));
+      const t = clamp((ht - 3.6) / 0.45, 0, 1);
+      fall = wob + 1.4 * t * t - 0.06 * bump(ht, 4.12, 0.05);
     }
-    const lx = u - cx;
-    const ly = (v - cy) * (1 - 0.14 * Math.min(1, squash));
-    turn(out, lx, ly, 0, 0, ang);
-    out.x += cx + dx;
-    out.y += cy - hop + 0.14 * 20 * Math.min(1, squash);
+    const [x1, y1, s1] = square(f, r);
+    const lx = (u - x0) / s0;
+    const ly = (lv - y0) / s0;
+    turn(out, lx, ly, 0, 0, fall);
+    out.x = x1 + out.x * s1;
+    out.y = y1 + out.y * s1 - hop + 8;
   },
 };
 
-// parts: 1 "<", 2 "/", 3 ">", 4 the cursor
-const CODE = { lt: 0, sl: 0, gt: 0, cur: 0 };
+// The code picture: an editor made of ink. When it lands the whole program
+// is sucked back into the cursor, then types itself out again token by
+// token, each one sprayed from the cursor, and runs. parts: 0 window, 30 the
+// cursor, 1.. the tokens, in typing order
+const LINES: [number, number[]][] = [
+  [0, [16, 24, 9]],
+  [1, [11, 18, 28]],
+  [1, [9, 32]],
+  [2, [13, 20, 11]],
+  [2, [26]],
+  [1, [7]],
+  [1, [17, 12, 23]],
+  [0, [7]],
+  [0, []],
+  [0, [19, 36]],
+];
+type Tok = { x: number; y: number; w: number; t: number };
+const TOKENS: Tok[] = [];
+{
+  let k = 0;
+  LINES.forEach(([indent, ws], row) => {
+    let x = -82 + indent * 10;
+    const y = -33 + row * 9;
+    for (const w of ws) {
+      TOKENS.push({ x, y, w, t: 0.75 + k * 0.19 });
+      x += w + 3.5;
+      k++;
+    }
+  });
+}
+const CURSOR0: [number, number] = [-82, -33];
+function cursorAt(ht: number): [number, number] {
+  if (ht < TOKENS[0].t) return CURSOR0;
+  for (let k = TOKENS.length - 1; k >= 0; k--) {
+    const tk = TOKENS[k];
+    if (ht >= tk.t) return [tk.x + tk.w * clamp((ht - tk.t) / 0.16, 0, 1) + 2, tk.y];
+  }
+  return CURSOR0;
+}
 const code: Scene = {
   id: "code",
   label: "Code",
   caption: "code, most days",
+  place: "band",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 300, 140, 0.96);
-    o.font = `800 100px ${identFont()}`;
-    o.textAlign = "left";
-    o.textBaseline = "middle";
-    const ws = ["<", "/", ">"].map((c) => o.measureText(c).width);
-    const total = ws[0] + ws[1] + ws[2] + 30;
-    let x = -total / 2;
-    ["<", "/", ">"].forEach((c, k) => {
+    fit(o, w, h, 228, 126, 0.96);
+    part(o, 0);
+    o.lineWidth = 2.2;
+    o.beginPath();
+    o.roundRect(-110, -58, 220, 116, 8);
+    o.stroke();
+    o.lineWidth = 1.2;
+    o.beginPath();
+    o.moveTo(-110, -45);
+    o.lineTo(110, -45);
+    o.stroke();
+    for (const dx of [0, 8, 16]) {
+      o.beginPath();
+      o.arc(-100 + dx, -51.5, 2.3, 0, Math.PI * 2);
+      o.fill();
+    }
+    // line numbers
+    for (let r = 0; r < LINES.length; r++) o.fillRect(-97, -35 + r * 9, 5, 3.6);
+    TOKENS.forEach((tk, k) => {
       part(o, k + 1);
-      o.fillText(c, x, 0);
-      if (k === 0) CODE.lt = x + ws[0] / 2;
-      if (k === 1) CODE.sl = x + ws[1] / 2;
-      if (k === 2) CODE.gt = x + ws[2] / 2;
-      x += ws[k];
+      o.beginPath();
+      o.roundRect(tk.x, tk.y - 2.3, tk.w, 4.6, 2.3);
+      o.fill();
     });
-    part(o, 4);
-    CODE.cur = x + 16;
-    o.fillRect(x + 10, -34, 12, 68);
+    part(o, 30);
+    o.fillRect(CURSOR0[0] - 1, CURSOR0[1] - 4, 2.4, 8);
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
-    // the brackets open as if something is being typed between them, the
-    // slash leans with each keystroke, and the cursor blinks
-    const open = 7 * (smooth(0.6, 1.0, ht) - smooth(2.2, 2.7, ht)) + 7 * (smooth(3.1, 3.5, ht) - smooth(4.4, 4.9, ht));
-    const keys = Math.max(0, Math.sin(ht * 13)) * (smooth(0.9, 1.1, ht) - smooth(2.0, 2.2, ht));
-    out.x = u;
-    out.y = v;
-    if (p === 1) out.x = u - open;
-    else if (p === 3) out.x = u + open;
-    else if (p === 2) {
-      turn(out, u, v, CODE.sl, 0, 0.12 * keys);
-    } else if (p === 4) {
-      out.x = u + open;
-      if (Math.floor(ht * 1.9) % 2 === 1) out.y = 34 - (34 - v) * 0.12;
+    const [cx, cy] = cursorAt(ht);
+    // "run": once it's all typed, a ripple runs down the lines
+    const run = (row: number) => 2.5 * bump(ht, 4.55 + row * 0.06, 0.07);
+    if (p === 30) {
+      const blink = ht > 4.4 && Math.floor(ht * 2.2) % 2 === 1 ? 0.15 : 1;
+      out.x = cx + (u - CURSOR0[0]);
+      out.y = cy + (v - CURSOR0[1]) * blink;
+      return;
     }
+    if (p < 1 || p > TOKENS.length) {
+      out.x = u;
+      out.y = v;
+      return;
+    }
+    const tk = TOKENS[p - 1];
+    // how much of this token is on the page: all of it as the picture lands,
+    // none once it's been sucked away, then back as it's typed
+    const here = ht < 0.6 ? 1 - smooth(0.05 + (TOKENS.length - p) * 0.012, 0.35 + (TOKENS.length - p) * 0.012, ht) : smooth(tk.t, tk.t + 0.2, ht);
+    const tcx = tk.x + tk.w / 2;
+    // away, a token is a small knot of ink riding on the cursor
+    const ax = cx + (u - tcx) * 0.1;
+    const ay = cy + (v - tk.y) * 0.4;
+    const row = Math.round((tk.y + 33) / 9);
+    out.x = ax + (u - ax) * here + run(row);
+    out.y = ay + (v - ay) * here;
   },
 };
 
@@ -798,7 +975,7 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
         xs.push(x);
         ys.push(y);
         ws.push(1);
-        ps.push(Math.round(d[q] / 20));
+        ps.push(Math.round(d[q] / 8));
       }
     }
   }
@@ -860,6 +1037,35 @@ function pictureBox(canvas: HTMLCanvasElement, w: number, h: number) {
   return { x: g / 2, y: navClear - 8, w: w - g, h: Math.max(140, bottom - navClear + 8) };
 }
 
+type Box = { x: number; y: number; w: number; h: number };
+/**
+ * Pictures don't all sit in one spot. On wide screens each has its own place:
+ * "side" is the upper right beside the name, "band" is the whole width above
+ * the words, "left" is above the name. Narrower screens have one free area,
+ * so everything uses it.
+ */
+function pictureBoxes(canvas: HTMLCanvasElement, w: number, h: number): Record<"side" | "band" | "left", Box> {
+  const side = pictureBox(canvas, w, h);
+  if (w < 1024 || w <= h * 1.15) return { side, band: side, left: side };
+  const navClear = 72;
+  const fl = Math.max(40, (w - 2200) / 2);
+  const fw = w - fl * 2;
+  const cr = canvas.getBoundingClientRect();
+  const hero = canvas.closest("section");
+  const topOf = (sel: string, fb: number) => {
+    const el = hero?.querySelector<HTMLElement>(sel);
+    return el ? el.getBoundingClientRect().top - cr.top : fb;
+  };
+  const nameTop = topOf("[data-hero-name]", h * 0.65);
+  const sideTop = topOf("[data-hero-side]", h * 0.7);
+  const bandBottom = Math.min(nameTop, sideTop) - 24;
+  return {
+    side,
+    band: { x: fl, y: navClear, w: fw, h: Math.max(140, bandBottom - navClear) },
+    left: { x: fl, y: navClear, w: fw * 0.52, h: Math.max(140, nameTop - 24 - navClear) },
+  };
+}
+
 export function MorphField({ go }: { go: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const ctl = useRef({ paused: false, go: false });
@@ -893,7 +1099,7 @@ export function MorphField({ go }: { go: boolean }) {
     // delay, so a picture streams in from everywhere instead of snapping
     let ambient = new Uint8Array(0);
     let delay = new Float32Array(0);
-    type Target = { tx: Float32Array; ty: Float32Array; part: Uint8Array; k: number; meta: Meta };
+    type Target = { tx: Float32Array; ty: Float32Array; part: Uint8Array; k: number; meta: Meta; b: Box };
     let targets: (Target | null)[] = [];
     // where each point is asked to be this frame, and last frame: a jump
     // (a speed line wrapping round, the cursor blinking) moves the point with
@@ -904,9 +1110,27 @@ export function MorphField({ go }: { go: boolean }) {
     let lastY = new Float32Array(0);
     let freshGoals = true;
     const mv = { x: 0, y: 0 };
-    let list: Scene[] = [f1, games, dj, cook, board, code];
+    let list: Scene[] = [f1, games, dj, board, code, drums];
     let portrait: HTMLImageElement | null = null;
-    let box = { x: 0, y: 0, w: 0, h: 0 };
+    let box: Box = { x: 0, y: 0, w: 0, h: 0 };
+    let boxes: Record<"side" | "band" | "left", Box> = { side: box, band: box, left: box };
+    // between pictures each thread bends through its own random spot on the
+    // page, so a hand-off fills the whole hero the way the entrance does
+    let scatX = new Float32Array(0);
+    let scatY = new Float32Array(0);
+    let snapX = new Float32Array(0);
+    let snapY = new Float32Array(0);
+    let ctrlX = new Float32Array(0);
+    let ctrlY = new Float32Array(0);
+    let morph = false;
+    let swirl = 1;
+    function rollScatter() {
+      for (let i = 0; i < n; i++) {
+        scatX[i] = Math.random() * w;
+        scatY[i] = Math.random() * h;
+      }
+      swirl = -swirl;
+    }
     let sceneIdx = 0;
     let phaseStart = 0;
     let started = false;
@@ -936,11 +1160,14 @@ export function MorphField({ go }: { go: boolean }) {
       canvas!.width = Math.round(w * dpr);
       canvas!.height = Math.round(h * dpr);
       const mobile = w < 768;
-      box = pictureBox(canvas!, w, h);
-      const shape = Math.min(mobile ? 2600 : 5200, (box.w * box.h) / (mobile ? 34 : 46));
+      boxes = pictureBoxes(canvas!, w, h);
+      box = boxes.side;
+      const area = Math.max(...Object.values(boxes).map((b) => b.w * b.h));
+      const shape = Math.min(mobile ? 2600 : 5200, area / (mobile ? 34 : 46));
       const count = Math.round(shape / 0.62);
       if (count !== n) {
         n = count;
+        morph = false;
         x = new Float32Array(n);
         y = new Float32Array(n);
         vx = new Float32Array(n);
@@ -952,6 +1179,12 @@ export function MorphField({ go }: { go: boolean }) {
         goalY = new Float32Array(n);
         lastX = new Float32Array(n);
         lastY = new Float32Array(n);
+        scatX = new Float32Array(n);
+        scatY = new Float32Array(n);
+        snapX = new Float32Array(n);
+        snapY = new Float32Array(n);
+        ctrlX = new Float32Array(n);
+        ctrlY = new Float32Array(n);
         for (let i = 0; i < n; i++) {
           x[i] = Math.random() * w;
           y[i] = Math.random() * h;
@@ -960,13 +1193,15 @@ export function MorphField({ go }: { go: boolean }) {
         }
         if (started) seedEdges();
       }
+      rollScatter();
       // the name, so the face knows where to look
       const cr = canvas!.getBoundingClientRect();
       const nm = canvas!.closest("section")?.querySelector<HTMLElement>("[data-hero-name]")?.getBoundingClientRect();
       const nameX = nm ? nm.left + nm.width * 0.35 - cr.left : 0;
       const nameY = nm ? nm.top + nm.height * 0.5 - cr.top : h;
       targets = list.map((sc) => {
-        const s0 = sample(sc, n, box.w, box.h, portrait);
+        const b = boxes[sc.place ?? "side"];
+        const s0 = sample(sc, n, b.w, b.h, portrait);
         if (!s0) return null;
         const meta: Meta = { cx: 0, cy: 0, rx: 1, ry: 1, yaw: 0, pitch: 0 };
         if (sc.image) {
@@ -977,20 +1212,20 @@ export function MorphField({ go }: { go: boolean }) {
             y0 = Math.min(y0, s0.ty[i]);
             y1 = Math.max(y1, s0.ty[i]);
           }
-          meta.cx = (x0 + x1) / 2 - box.w / 2;
-          meta.cy = (y0 + y1) / 2 - box.h / 2;
+          meta.cx = (x0 + x1) / 2 - b.w / 2;
+          meta.cy = (y0 + y1) / 2 - b.h / 2;
           meta.rx = Math.max(1, (x1 - x0) / 2);
           meta.ry = Math.max(1, (y1 - y0) / 2);
-          const fx = box.x + box.w / 2 + meta.cx;
-          const fy = box.y + box.h / 2 + meta.cy;
+          const fx = b.x + b.w / 2 + meta.cx;
+          const fy = b.y + b.h / 2 + meta.cy;
           meta.yaw = clamp((nameX - fx) / (meta.rx * 3), -0.34, 0.34);
           meta.pitch = clamp((nameY - fy) / (meta.ry * 4), -0.08, 0.22);
         }
         for (let i = 0; i < n; i++) {
-          s0.tx[i] += box.x;
-          s0.ty[i] += box.y;
+          s0.tx[i] += b.x;
+          s0.ty[i] += b.y;
         }
-        return { ...s0, meta };
+        return { ...s0, meta, b };
       });
       freshGoals = true;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1011,7 +1246,8 @@ export function MorphField({ go }: { go: boolean }) {
         if (!reduce) seedEdges();
       }
 
-      // scene clock: form, hold, drift, next
+      // scene clock: form (the entrance, or the morph out of the last
+      // picture), hold, and straight on to the next
       let el = now - phaseStart;
       if (ctl.current.paused || reduce) {
         el = Math.min(el, FORM + 1);
@@ -1021,14 +1257,34 @@ export function MorphField({ go }: { go: boolean }) {
         phaseStart = now;
         el = 0;
         freshGoals = true;
+        rollScatter();
+        // hand straight over: every thread flies from where it is right now
+        // into its place in the next picture, along its own curve. The curves
+        // bow out across the page, so mid-flight the ink fills the hero
+        const nt = targets[sceneIdx];
+        if (nt) {
+          morph = true;
+          for (let i = 0; i < n; i++) {
+            if (ambient[i]) continue;
+            snapX[i] = x[i];
+            snapY[i] = y[i];
+            const dx = nt.tx[i] - x[i];
+            const dy = nt.ty[i] - y[i];
+            const len = Math.hypot(dx, dy) + 1;
+            const mx = x[i] + dx / 2;
+            const my = y[i] + dy / 2;
+            const amp = len * (0.2 + 0.4 * Math.random()) * swirl;
+            // the control point overshoots this thread's random spot, so at
+            // mid-flight the ink is spread across most of the page
+            ctrlX[i] = mx - (dy / len) * amp + (scatX[i] - mx) * 1.3;
+            ctrlY[i] = my + (dx / len) * amp + (scatY[i] - my) * 1.3;
+          }
+        }
         setCurrent(sceneIdx);
       }
       const tgt = targets[sceneIdx];
-      // pull: 0 while drifting, rises while forming, full while holding
-      let pull: number;
-      if (el < FORM) pull = Math.pow(el / FORM, 2);
-      else if (el < FORM + HOLD) pull = 1;
-      else pull = Math.max(0, 1 - (el - FORM - HOLD) / 500);
+      // pull: rises while forming, full while holding
+      const pull = el >= FORM ? 1 : morph ? 0.3 + 0.7 * (el / FORM) ** 2 : (el / FORM) ** 2;
 
       // short trails while the ink first floods in, the long ink trails after
       const entry = Math.max(0, 1 - (now - startedAt) / 2200);
@@ -1048,10 +1304,11 @@ export function MorphField({ go }: { go: boolean }) {
       // while a picture holds it stays alive: it breathes (a slow, slight
       // swell), every dot circles its spot, and the whole picture leans a
       // little towards the pointer
-      const cx0 = box.x + box.w / 2;
-      const cy0 = box.y + box.h / 2;
+      const B = tgt ? tgt.b : box;
+      const cx0 = B.x + B.w / 2;
+      const cy0 = B.y + B.h / 2;
       const breath = 1 + 0.016 * Math.sin(t * 0.9);
-      const wob = Math.max(1.2, Math.min(box.w, box.h) * 0.0045);
+      const wob = Math.max(1.2, Math.min(B.w, B.h) * 0.0045);
       const leanTo = (v: number, centre: number, span: number) => Math.max(-span, Math.min(span, (v - centre) * 0.035));
       leanX += ((stir ? leanTo(pointer.x, cx0, 18) : 0) - leanX) * 0.04;
       leanY += ((stir ? leanTo(pointer.y, cy0, 12) : 0) - leanY) * 0.04;
@@ -1076,7 +1333,7 @@ export function MorphField({ go }: { go: boolean }) {
           goalY[i] = gy;
         }
       }
-      const jump = Math.max(14, Math.min(box.w, box.h) * 0.05);
+      const jump = Math.max(14, Math.min(B.w, B.h) * 0.05);
       const holding = el >= FORM && el < FORM + HOLD && !freshGoals;
 
       const px = new Float32Array(n);
@@ -1098,23 +1355,32 @@ export function MorphField({ go }: { go: boolean }) {
         let ay = 0;
         // this thread's own pull: never for ambient ones; staggered for the rest
         let pi = 0;
+        let flying = false;
         if (!ambient[i]) {
-          if (el < FORM) {
+          if (el >= FORM) pi = 1;
+          else if (morph && tgt) flying = true;
+          else {
             const kk = Math.min(1, Math.max(0, (el / FORM - delay[i]) / 0.55));
             pi = kk * kk * (3 - 2 * kk);
-          } else if (el < FORM + HOLD) pi = 1;
-          else {
-            const rel = Math.min(1, Math.max(0, ((el - FORM - HOLD) / 900 - delay[i] * 0.6) / 0.5));
-            pi = 1 - rel * rel * (3 - 2 * rel);
           }
         }
-        const fi = 1 - pi;
+        const fi = flying ? 0 : 1 - pi;
         if (fi > 0.01) {
           const a = noise(x[i] * ns + t * 0.05, y[i] * ns - t * 0.04) * Math.PI * 4;
           ax += Math.cos(a) * 0.35 * fi;
           ay += Math.sin(a) * 0.35 * fi;
         }
-        if (tgt && pi > 0) {
+        if (flying) {
+          // along this thread's curve from the last picture to the next,
+          // each thread a little behind or ahead of its neighbours
+          const s = clamp((el / FORM - delay[i] * 0.6) / 0.73, 0, 1);
+          const e = s * s * (3 - 2 * s);
+          const q = 1 - e;
+          const gx = q * q * snapX[i] + 2 * q * e * ctrlX[i] + e * e * goalX[i];
+          const gy = q * q * snapY[i] + 2 * q * e * ctrlY[i] + e * e * goalY[i];
+          ax += (gx - x[i]) * 0.3;
+          ay += (gy - y[i]) * 0.3;
+        } else if (tgt && pi > 0) {
           // a playing picture follows its motion tightly; forming ink stays loose
           const k = 0.012 + pi * 0.05 + (pi > 0.99 ? live * 0.16 : 0);
           if (holding) {
@@ -1135,7 +1401,7 @@ export function MorphField({ go }: { go: boolean }) {
         // cap the drift and pull so far-off threads glide in as ink, not
         // as streaks; the pointer's push (below) stays sharp on purpose
         const am = Math.hypot(ax, ay);
-        if (am > cap && !(holding && live > 0.5 && pi > 0.99)) {
+        if (am > cap && !flying && !(holding && live > 0.5 && pi > 0.99)) {
           ax *= cap / am;
           ay *= cap / am;
         }
@@ -1211,7 +1477,7 @@ export function MorphField({ go }: { go: boolean }) {
 
       // a slow band of light sweeps across the held picture, every few seconds
       if (pull > 0.6 && !reduce) {
-        const span = box.w + box.h * 0.6;
+        const span = B.w + B.h * 0.6;
         const band = (((t / 4.5) % 1) * 1.5 - 0.25) * span;
         const width = Math.max(30, span * 0.05);
         for (const [alpha, lo, hi] of [
@@ -1221,7 +1487,7 @@ export function MorphField({ go }: { go: boolean }) {
           c.fillStyle = `rgba(250,255,228,${alpha})`;
           for (let i = 0; i < n; i++) {
             if (ambient[i] || fear[i] > 0.2) continue;
-            const d = Math.abs((x[i] - box.x) + (y[i] - box.y) * 0.6 - band) / width;
+            const d = Math.abs((x[i] - B.x) + (y[i] - B.y) * 0.6 - band) / width;
             if (d < lo || d >= hi) continue;
             c.fillRect(x[i] - 1, y[i] - 1, 2, 2);
           }
