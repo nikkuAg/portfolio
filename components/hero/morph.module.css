@@ -281,3 +281,17 @@
     font-size: 0.85rem;
   }
 }
+
+/* landscape between phone and desktop (a small laptop, a tablet held wide):
+   the words on the left half, the picture filling the right half */
+@media (min-width: 768px) and (max-width: 1023px) and (min-aspect-ratio: 23/20) and (min-height: 521px) {
+  .content {
+    right: 50%;
+  }
+  .name {
+    font-size: clamp(2.6rem, min(6.4vw, 11vh), 4.6rem);
+  }
+  .side {
+    max-width: none;
+  }
+}

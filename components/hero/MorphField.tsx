@@ -8,7 +8,7 @@ import s from "./morph.module.css";
 // games, DJing, cooking, board games, code), hold it, let go and drift into
 // the next; the rest never settle and keep the whole screen inked. While a
 // picture holds it plays: the face looks round, the car launches, the pad
-// is played, the record spins, the food is tossed, the dice are thrown.
+// is played, the decks are mixed, the food is tossed, the dice are thrown.
 // The pointer is a predator: threads near it scatter and glow, then come back.
 
 /** Where a held picture's points go at a moment of its hold. */
@@ -371,107 +371,144 @@ const games: Scene = {
   },
 };
 
-// parts: 0 plinth and fader slot, 1 record, 2 tonearm, 3 fader knob, 4–7 level meter
-const REC: [number, number] = [-16, 0];
+// A two-deck controller from above. parts: 0 chassis, slots and dividers,
+// 1–2 jog wheels, 3–4 channel fader caps, 5 crossfader cap, 6–7 level
+// meters, 8–9 EQ knobs (A, B)
+const JOG: [number, number][] = [
+  [-60, 4],
+  [60, 4],
+];
+const STRIP = [-12, 12];
+const KNOB_Y = [-36, -27, -18];
+const METER_BASE = -10;
 const dj: Scene = {
   id: "dj",
   label: "DJ",
   caption: "DJing, my newest habit",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 140, 100, 0.92);
+    fit(o, w, h, 204, 100, 0.95);
     o.lineCap = "round";
-    // a turntable from above
     part(o, 0);
-    o.lineWidth = 3;
+    o.lineWidth = 2.6;
     o.beginPath();
-    o.roundRect(-66, -46, 132, 92, 9);
+    o.roundRect(-100, -46, 200, 92, 9);
     o.stroke();
-    o.lineWidth = 1.6;
-    o.beginPath();
-    o.moveTo(57, -6);
-    o.lineTo(57, 36);
-    o.stroke();
-    // the record: grooves, a label with a stripe, and one bright notch, so
-    // you can see it spin
-    part(o, 1);
-    o.beginPath();
-    o.arc(REC[0], REC[1], 38, 0, Math.PI * 2);
-    o.fill();
-    o.globalCompositeOperation = "destination-out";
-    o.lineWidth = 1.4;
-    for (const r of [32, 26, 19]) {
+    o.lineWidth = 1.3;
+    for (const x of [-25, 25]) {
       o.beginPath();
-      o.arc(REC[0], REC[1], r, 0, Math.PI * 2);
+      o.moveTo(x, -40);
+      o.lineTo(x, 40);
       o.stroke();
     }
-    o.lineWidth = 2.2;
-    o.beginPath();
-    o.arc(REC[0], REC[1], 13, 0, Math.PI * 2);
-    o.stroke();
-    o.fillRect(REC[0], REC[1] - 1.2, 12, 2.4);
-    o.lineWidth = 2.4;
-    o.beginPath();
-    o.moveTo(REC[0] - Math.cos(2.2) * 16, REC[1] + Math.sin(2.2) * 16);
-    o.lineTo(REC[0] - Math.cos(2.2) * 36, REC[1] + Math.sin(2.2) * 36);
-    o.stroke();
-    o.beginPath();
-    o.arc(REC[0], REC[1], 1.8, 0, Math.PI * 2);
-    o.fill();
-    o.globalCompositeOperation = "source-over";
-    // tonearm: pivot, counterweight, arm, headshell on the record
-    part(o, 2);
-    o.beginPath();
-    o.arc(44, -30, 6, 0, Math.PI * 2);
-    o.fill();
-    o.beginPath();
-    o.arc(51, -34, 4, 0, Math.PI * 2);
-    o.fill();
-    o.lineWidth = 3;
-    o.beginPath();
-    o.moveTo(44, -30);
-    o.lineTo(15, -16);
-    o.stroke();
-    o.lineWidth = 4.5;
-    o.beginPath();
-    o.moveTo(15, -16);
-    o.lineTo(8, -19);
-    o.stroke();
-    // pitch fader knob
-    part(o, 3);
-    o.fillRect(51, 10, 12, 6);
-    // level meter
-    for (let k = 0; k < 4; k++) {
-      part(o, 4 + k);
-      o.fillRect(27 + k * 6, 16, 3.6, 22);
+    // fader slots and the crossfader slot
+    for (const x of STRIP) {
+      o.beginPath();
+      o.moveTo(x, -6);
+      o.lineTo(x, 26);
+      o.stroke();
     }
+    o.beginPath();
+    o.moveTo(-14, 36);
+    o.lineTo(14, 36);
+    o.stroke();
+    // jog wheels: a platter with rings and one marker, so you see them turn
+    JOG.forEach(([cx, cy], k) => {
+      part(o, k + 1);
+      o.beginPath();
+      o.arc(cx, cy, 33, 0, Math.PI * 2);
+      o.fill();
+      o.globalCompositeOperation = "destination-out";
+      o.lineWidth = 1.6;
+      for (const r of [27, 15]) {
+        o.beginPath();
+        o.arc(cx, cy, r, 0, Math.PI * 2);
+        o.stroke();
+      }
+      o.lineWidth = 3.2;
+      o.beginPath();
+      o.moveTo(cx, cy - 17);
+      o.lineTo(cx, cy - 31);
+      o.stroke();
+      o.beginPath();
+      o.arc(cx, cy, 3.2, 0, Math.PI * 2);
+      o.fill();
+      o.globalCompositeOperation = "source-over";
+    });
+    // EQ knobs, each with a cut pointer
+    STRIP.forEach((x, k) => {
+      part(o, 8 + k);
+      for (const y of KNOB_Y) {
+        o.beginPath();
+        o.arc(x, y, 3.8, 0, Math.PI * 2);
+        o.fill();
+        o.globalCompositeOperation = "destination-out";
+        o.lineWidth = 1.2;
+        o.beginPath();
+        o.moveTo(x, y);
+        o.lineTo(x, y - 3.8);
+        o.stroke();
+        o.globalCompositeOperation = "source-over";
+      }
+    });
+    // level meters, a column of segments per channel
+    [-4, 4].forEach((x, k) => {
+      part(o, 6 + k);
+      for (let s = 0; s < 7; s++) o.fillRect(x - 1.8, METER_BASE - 3 - s * 4, 3.6, 3);
+    });
+    // fader caps, drawn at the top of their throw, and the crossfader cap
+    STRIP.forEach((x, k) => {
+      part(o, 3 + k);
+      o.fillRect(x - 4.5, -6, 9, 4.5);
+    });
+    part(o, 5);
+    o.fillRect(-2.5, 32, 5, 8);
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
-    // 124 bpm: everything keeps time with the kick
+    // the set: A is playing, B is brought in, the crossfader sweeps from
+    // A to B, then A's fader comes down. Everything keeps a 124 bpm beat
     const beat = (ht * 124) / 60;
     const kick = Math.exp(-mod(beat, 1) * 5);
+    const faderA = 1 - smooth(3.7, 4.5, ht);
+    const faderB = smooth(0.4, 1.4, ht);
+    const xf = smooth(1.6, 3.4, ht); // 0 = all A, 1 = all B
     let x = u;
     let y = v;
-    if (p === 1) {
-      // 33⅓ rpm, with a scratch in the middle
-      const scratch = smooth(2.2, 2.4, ht) * (1 - smooth(3.2, 3.4, ht));
-      const a = ht * 3.5 + scratch * 0.7 * Math.sin((ht - 2.2) * 15);
-      turn(out, u, v, REC[0], REC[1], a);
+    if (p === 1 || p === 2) {
+      const [cx, cy] = JOG[p - 1];
+      // A spins steadily; B is nudged into time before it's let go
+      const a =
+        p === 1
+          ? ht * 3.4
+          : ht * 3.4 * smooth(0.3, 0.9, ht) + 0.6 * Math.sin(ht * 11) * (smooth(0.5, 0.7, ht) - smooth(1.4, 1.7, ht));
+      turn(out, u, v, cx, cy, a);
       x = out.x;
       y = out.y;
-    } else if (p === 2) {
-      turn(out, u, v, 44, -30, 0.008 * Math.sin(ht * 23));
+    } else if (p === 3 || p === 4) {
+      const f = p === 3 ? faderA : faderB;
+      y = v + (1 - f) * 26;
+    } else if (p === 5) {
+      x = u - 9 + 18 * xf;
+    } else if (p === 6 || p === 7) {
+      const gain = p === 6 ? faderA * (1 - xf * 0.85) : faderB * (0.15 + xf * 0.85);
+      const level = clamp(0.08 + gain * (0.45 + 0.5 * kick + 0.2 * noise(p * 5.1, ht * 6)), 0.08, 1);
+      y = METER_BASE - (METER_BASE - v) * level;
+    } else if (p === 8 || p === 9) {
+      const sx = STRIP[p - 8];
+      let ky = KNOB_Y[0];
+      for (const k of KNOB_Y) if (Math.abs(v - k) < Math.abs(v - ky)) ky = k;
+      const row = KNOB_Y.indexOf(ky);
+      // A's bass is cut as B comes in; B's highs are swept up and back
+      let a = 0;
+      if (p === 8 && row === 2) a = -2.2 * smooth(1.4, 1.9, ht);
+      if (p === 9 && row === 0) a = 1.6 * Math.sin(Math.max(0, ht - 2) * 2.2) * smooth(2, 2.4, ht);
+      if (p === 9 && row === 2) a = -2.2 * (1 - smooth(1.8, 2.6, ht)) * smooth(0.2, 0.5, ht);
+      turn(out, u, v, sx, ky, a);
       x = out.x;
       y = out.y;
-    } else if (p === 3) {
-      y += 8 * Math.sin(ht * 0.9);
-    } else if (p >= 4) {
-      const j = p - 4;
-      const level = clamp(0.22 + 0.62 * kick * (1 - j * 0.14) + 0.32 * noise(j * 3.7, ht * 5), 0.12, 1);
-      y = 38 - (38 - v) * level;
     }
-    const pulse = 1 + 0.012 * kick;
+    const pulse = 1 + 0.008 * kick;
     out.x = x * pulse;
     out.y = y * pulse;
   },
@@ -803,9 +840,13 @@ function pictureBox(canvas: HTMLCanvasElement, w: number, h: number) {
     const el = hero?.querySelector<HTMLElement>(sel);
     return el ? el.getBoundingClientRect().top - cr.top : null;
   };
-  if (w > h && h < 520) {
+  // landscape below desktop width (a phone on its side, a small laptop or a
+  // tablet held wide): the words take the left half, the picture the right,
+  // top to bottom
+  if (w < 1024 && w > h * 1.15) {
+    const top = h < 520 ? 60 : navClear;
     const x = w * 0.5;
-    return { x, y: 60, w: w - x - g, h: h - 60 - 16 };
+    return { x, y: top, w: w - x - g, h: h - top - (h < 520 ? 16 : 28) };
   }
   if (w >= 1024) {
     // follow the words' frame, which stops growing past 2200px on ultrawides
