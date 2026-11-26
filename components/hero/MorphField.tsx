@@ -100,14 +100,24 @@ const face: Scene = {
   move(out, u, v, _p, _i, ht, m) {
     const toName = smooth(0.3, 1.0, ht) * (1 - smooth(2.4, 3.0, ht));
     const away = smooth(2.9, 3.4, ht) * (1 - smooth(4.1, 4.7, ht));
-    const yaw = m.yaw * toName - m.yaw * 0.7 * away;
-    const pitch = m.pitch * toName - 0.03 * away;
-    const nu = clamp((u - m.cx) / m.rx, -0.999, 0.999);
-    const nv = clamp((v - m.cy) / m.ry, -0.999, 0.999);
-    // the head turns on its neck; the shoulders stay put
-    const head = 1 - smooth(0.3, 0.75, nv);
-    out.x = m.cx + Math.sin(clamp(Math.asin(nu) + yaw * head, -1.5, 1.5)) * m.rx;
-    out.y = m.cy + Math.sin(clamp(Math.asin(nv) + pitch * head, -1.5, 1.5)) * m.ry;
+    // where it looks, -1..1 each way
+    const lx = (m.yaw / 0.34) * (toName - 0.7 * away);
+    const ly = (m.pitch / 0.22) * toName - 0.15 * away;
+    const nu = (u - m.cx) / m.rx;
+    const nv = (v - m.cy) / m.ry;
+    // the eyes, glasses and nose slide towards the look; the outline doesn't,
+    // so the face reads as turning, not as being squeezed
+    const across = Math.max(0, 1 - nu * nu);
+    const down = Math.max(0, 1 - ((nv + 0.2) / 0.7) ** 2);
+    const feat = across * across * down * down;
+    let fx = u + lx * m.rx * 0.08 * feat;
+    let fy = v + ly * m.ry * 0.05 * feat;
+    // and the whole head moves with it, rigidly: a small lean and tilt on
+    // the neck, while the shoulders stay put
+    const head = 1 - smooth(0.45, 0.8, nv);
+    fx += lx * m.rx * 0.03 * head;
+    fy += ly * m.ry * 0.025 * head;
+    turn(out, fx, fy, m.cx, m.cy + m.ry * 0.6, -lx * 0.035 * head);
   },
 };
 
