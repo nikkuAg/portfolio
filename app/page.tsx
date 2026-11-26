@@ -1,4 +1,4 @@
-import { HeroSection } from "@/components/hero/HeroSection";
+import { MorphHero } from "@/components/hero/MorphHero";
 import { AboutSection } from "@/components/about/AboutSection";
 import { ProjectsSection } from "@/components/projects/ProjectsSection";
 import { ExperienceSection } from "@/components/experience/ExperienceSection";
@@ -10,7 +10,7 @@ export default function Home() {
   return (
     <>
       <JsonLd />
-      <HeroSection />
+      <MorphHero />
       <AboutSection />
       <ProjectsSection />
       <ExperienceSection />

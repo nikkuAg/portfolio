@@ -1,0 +1,100 @@
+/* X · the start gantry. Red is rosso, not a logo. */
+
+.wrap {
+  position: absolute;
+  right: clamp(16px, 6vw, 96px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(38rem, 48vw);
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  color: #f3efe6;
+}
+
+.gantry {
+  display: flex;
+  gap: clamp(8px, 1.4vw, 18px);
+  padding: clamp(14px, 1.6vw, 22px);
+  border: 0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #17171a, #0c0c0e);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 0 0 6px #070708,
+    0 30px 60px -20px rgb(0 0 0 / 0.9);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.gantry:focus-visible {
+  outline: 2px solid #ff3b30;
+  outline-offset: 8px;
+}
+
+.pod {
+  display: grid;
+  gap: clamp(6px, 0.8vw, 10px);
+  padding: clamp(6px, 0.8vw, 10px);
+  border-radius: 999px;
+  background: #050506;
+}
+
+.lamp {
+  width: clamp(30px, 4.2vw, 56px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2b1214, #140708 70%);
+  box-shadow: inset 0 2px 6px rgb(0 0 0 / 0.8);
+  transition: background 60ms linear, box-shadow 60ms linear;
+}
+.lamp[data-on] {
+  background: radial-gradient(circle at 40% 35%, #ffb3a8, #ff2d20 45%, #b30d06);
+  box-shadow:
+    0 0 18px 4px rgb(255 45 32 / 0.65),
+    0 0 60px 10px rgb(255 45 32 / 0.25);
+}
+
+.readout {
+  margin: clamp(18px, 3vh, 32px) 0 0;
+  min-height: 1.2em;
+  font-family: var(--font-ident), var(--font-geist-sans), sans-serif;
+  font-stretch: 118%;
+  font-weight: 800;
+  font-size: clamp(1.6rem, 3.4vw, 3rem);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+.readout[data-phase="go"] {
+  color: #ff3b30;
+}
+.readout[data-phase="jump"] {
+  color: #ffb547;
+}
+
+.sub {
+  margin: 0.6rem 0 0;
+  max-width: 34ch;
+  min-height: 2.6em;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #a19c90;
+}
+
+.best {
+  color: #f3efe6;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .wrap {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 86px;
+    transform: none;
+    width: auto;
+  }
+  .sub {
+    font-size: 0.8rem;
+  }
+}

@@ -1,0 +1,473 @@
+/* AE–AH: pan toss, your move, controller, sequencer */
+
+/* ── AE · pan toss ── */
+.panHud {
+  position: absolute;
+  right: clamp(16px, 6vw, 96px);
+  bottom: clamp(88px, 11vh, 116px);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #f3e9dc;
+}
+.panBtn {
+  height: 3rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: #ffad42;
+  color: #1c1006;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -10px rgb(255 173 66 / 0.8);
+}
+.panBtn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.panScore {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #b8a99a;
+}
+.panScore span {
+  color: #f3e9dc;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── AF · your move ── */
+.boardWrap {
+  position: absolute;
+  right: clamp(16px, 5vw, 80px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(46vw, 72vh, 40rem);
+  aspect-ratio: 1;
+}
+.board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 6px;
+  padding: 10px;
+  border-radius: 18px;
+  background: #16130f;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    0 40px 80px -30px rgb(0 0 0 / 0.9);
+}
+.space {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #1f1b16;
+  border-top: 4px solid var(--sc);
+  color: #ded6c8;
+  font-size: clamp(0.62rem, 1vw, 0.85rem);
+  font-weight: 700;
+  transition: background-color 200ms ease;
+}
+.space[data-here] {
+  background: color-mix(in srgb, var(--sc) 22%, #1f1b16);
+}
+.meeple {
+  position: absolute;
+  width: 9%;
+  height: 9%;
+  transform: translate(-50%, -62%);
+  transition: left 200ms cubic-bezier(0.3, 1.6, 0.5, 1), top 200ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  filter: drop-shadow(0 6px 4px rgb(0 0 0 / 0.5));
+  pointer-events: none;
+}
+.middle {
+  grid-row: 2 / 5;
+  grid-column: 2 / 5;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+.diceBtn {
+  display: flex;
+  gap: 18px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+.diceBtn:disabled {
+  cursor: progress;
+}
+.diceBtn:focus-visible {
+  outline: 2px solid #f3efe6;
+}
+.die3d {
+  width: clamp(34px, 4.2vw, 52px);
+  aspect-ratio: 1;
+  perspective: 400px;
+}
+.cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 900ms cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 14%;
+  border-radius: 18%;
+  background: #f3efe6;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.15);
+  --d: calc(clamp(34px, 4.2vw, 52px) / 2);
+}
+.face i {
+  margin: 18%;
+  border-radius: 50%;
+}
+.face i[data-on] {
+  background: #1b1712;
+}
+.face[data-f="1"] { transform: translateZ(var(--d)); }
+.face[data-f="6"] { transform: rotateY(180deg) translateZ(var(--d)); }
+.face[data-f="3"] { transform: rotateY(90deg) translateZ(var(--d)); }
+.face[data-f="4"] { transform: rotateY(-90deg) translateZ(var(--d)); }
+.face[data-f="5"] { transform: rotateX(90deg) translateZ(var(--d)); }
+.face[data-f="2"] { transform: rotateX(-90deg) translateZ(var(--d)); }
+
+.card {
+  position: relative;
+  width: 86%;
+  height: 100%;
+  max-height: 11rem;
+  perspective: 900px;
+}
+.cardBack,
+.cardFront {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  transition: transform 600ms cubic-bezier(0.3, 1.2, 0.4, 1);
+}
+.cardBack {
+  display: grid;
+  place-items: center;
+  background: repeating-linear-gradient(45deg, #2a241d 0 8px, #241f19 8px 16px);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  color: #9b9283;
+  font-weight: 700;
+}
+.cardFront {
+  transform: rotateY(180deg);
+  padding: 12px 14px;
+  background: #f3efe6;
+  color: #1b1712;
+  border-top: 6px solid var(--sc);
+  overflow: hidden;
+}
+.cardFront b {
+  font-size: 0.8rem;
+  color: color-mix(in srgb, var(--sc) 70%, black);
+}
+.cardFront p {
+  margin: 4px 0 0;
+  font-size: clamp(0.78rem, 1.1vw, 0.98rem);
+  line-height: 1.35;
+  font-weight: 600;
+}
+.card[data-flip] .cardBack {
+  transform: rotateY(-180deg);
+}
+.card[data-flip] .cardFront {
+  transform: rotateY(0deg);
+}
+.note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #b0a797;
+  text-align: center;
+}
+
+/* ── AG · controller ── */
+.console {
+  position: absolute;
+  left: 44vw;
+  right: clamp(16px, 4vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  color: #f1eee6;
+}
+.console::before {
+  content: "";
+  position: absolute;
+  inset: -30% -10%;
+  z-index: -1;
+  background: radial-gradient(50% 50% at 50% 35%, color-mix(in srgb, var(--tc) 22%, transparent), transparent 70%);
+  transition: background 500ms ease;
+}
+.tiles {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+.tile {
+  width: clamp(80px, 8vw, 124px);
+  height: clamp(110px, 11vw, 168px);
+  display: grid;
+  align-content: end;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 14px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 18%, #17181c), #111215);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 260ms cubic-bezier(0.3, 1.4, 0.5, 1), border-color 200ms ease, box-shadow 200ms ease;
+}
+.tile[aria-selected="true"] {
+  transform: scale(1.16) translateY(-8px);
+  border-color: var(--c);
+  box-shadow: 0 0 0 2px var(--c), 0 20px 40px -14px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.tile:focus-visible {
+  outline: 2px solid var(--c);
+  outline-offset: 4px;
+}
+.tileTitle {
+  font-weight: 800;
+  font-size: clamp(0.8rem, 1vw, 1rem);
+}
+.tileSub {
+  font-size: 0.7rem;
+  color: #a7a397;
+}
+.consoleHint {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: #a7a397;
+  text-align: center;
+}
+.pad {
+  width: min(360px, 80%);
+  height: auto;
+}
+.padBody {
+  fill: #e9e7e2;
+  stroke: #c9c6bf;
+  stroke-width: 2;
+}
+.dpad rect {
+  fill: #2a2b30;
+}
+.dpad .hit {
+  fill: #2a2b30;
+  cursor: pointer;
+  transition: fill 120ms ease;
+}
+.dpad .hit[data-on],
+.dpad .hit:hover {
+  fill: var(--tc);
+}
+.face4 circle {
+  fill: #2a2b30;
+}
+.face4 .hitA {
+  cursor: pointer;
+  transition: fill 120ms ease;
+}
+.face4 .hitA[data-on],
+.face4 .hitA:hover {
+  fill: var(--tc);
+}
+.stick {
+  fill: #1d1e22;
+  stroke: #3a3b40;
+  stroke-width: 4;
+}
+.light {
+  fill: var(--tc);
+  transition: fill 500ms ease;
+}
+
+/* ── AH · sequencer ── */
+.seq {
+  position: absolute;
+  left: 44vw;
+  right: clamp(16px, 4vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ece8dc;
+}
+.seqTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.seqPlay,
+.seqBtn {
+  height: 2.6rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.seqPlay {
+  background: #c8ff3d;
+  border-color: #c8ff3d;
+  color: #111;
+}
+.seqPlay[aria-pressed="true"] {
+  background: transparent;
+  color: #c8ff3d;
+}
+.seqTempo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: #a7a397;
+  font-variant-numeric: tabular-nums;
+}
+.seqTempo input {
+  width: 7rem;
+  accent-color: #c8ff3d;
+}
+.seqGrid {
+  display: grid;
+  gap: 6px;
+}
+.seqRow {
+  display: grid;
+  grid-template-columns: 4.2rem repeat(16, 1fr);
+  gap: 4px;
+  align-items: center;
+}
+.seqName {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--rc);
+}
+.cell {
+  aspect-ratio: 1;
+  min-height: 0;
+  border: 0;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.05);
+  cursor: pointer;
+  transition: background-color 120ms ease, transform 80ms ease;
+}
+.cell[data-beat] {
+  background: rgb(255 255 255 / 0.09);
+}
+.cell[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--rc) 55%, #1a1a1a);
+}
+.cell[data-head] {
+  outline: 1px solid rgb(255 255 255 / 0.5);
+}
+.cell[aria-pressed="true"][data-head] {
+  background: var(--rc);
+  transform: scale(1.12);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 70%, transparent);
+}
+.cell:focus-visible {
+  outline: 2px solid var(--rc);
+  outline-offset: 1px;
+}
+
+@media (max-width: 767px) {
+  .panHud {
+    left: 14px;
+    right: 14px;
+    bottom: 84px;
+    justify-content: space-between;
+  }
+  .panScore {
+    font-size: 0.78rem;
+  }
+  .boardWrap {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 80px;
+    transform: none;
+    width: auto;
+    max-height: 52vh;
+    aspect-ratio: auto;
+    height: min(100vw - 24px, 52vh);
+  }
+  .space span {
+    font-size: 0.55rem;
+  }
+  .card {
+    width: 96%;
+  }
+  .console,
+  .seq {
+    left: 12px;
+    right: 12px;
+    top: auto;
+    bottom: 84px;
+    transform: none;
+  }
+  .tiles {
+    gap: 6px;
+  }
+  .tile {
+    width: 60px;
+    height: 84px;
+    padding: 8px 6px;
+  }
+  .tileSub {
+    display: none;
+  }
+  .pad {
+    width: min(250px, 70%);
+  }
+  .seqRow {
+    grid-template-columns: 3rem repeat(16, 1fr);
+    gap: 2px;
+  }
+  .seqTempo {
+    display: none;
+  }
+  .seqName {
+    font-size: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cube,
+  .cardBack,
+  .cardFront,
+  .meeple,
+  .tile {
+    transition: none;
+  }
+}

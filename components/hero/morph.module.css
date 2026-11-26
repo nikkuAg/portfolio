@@ -1,0 +1,235 @@
+/* The hero. One grid with the nav: the same side gutters (16 / 24 / 40px),
+   the name set large at the bottom left, the intro and the ways out beside
+   it on the same baseline, and the ink picture up and to the right. */
+
+.hero {
+  --g: 16px; /* matches the nav's side padding at each breakpoint */
+  --foot: 24px; /* breathing room under the words */
+  --lime: #c8ff3d;
+  --ink: #f2f1ec;
+  --muted: #8a887f;
+  position: relative;
+  height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  background: #0b0c10;
+  isolation: isolate;
+}
+@media (min-width: 640px) {
+  .hero {
+    --g: 24px;
+  }
+}
+@media (min-width: 768px) {
+  .hero {
+    --g: 40px;
+    --foot: 28px;
+  }
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+/* ── name, intro, ways out ── */
+.content {
+  position: absolute;
+  z-index: 3;
+  left: var(--g);
+  right: var(--g);
+  bottom: calc(var(--foot) + 2.75rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 25rem);
+  align-items: end;
+  gap: 2rem 3rem;
+  pointer-events: none;
+}
+.content > * {
+  pointer-events: auto;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--font-ident), var(--font-geist-sans), sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: clamp(3rem, 8.2vw, 8.6rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.line {
+  display: block;
+  overflow: hidden;
+  /* room for descenders inside the mask */
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+.line > span {
+  display: block;
+}
+
+.side {
+  position: relative;
+  padding-bottom: 0.4rem;
+}
+/* a soft pool of dark under the small text, so drifting ink never fights it */
+.side::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% -30% -25%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgb(11 12 16 / 0.9), rgb(11 12 16 / 0));
+  pointer-events: none;
+}
+
+.lede {
+  margin: 0;
+  max-width: 32ch;
+  font-size: clamp(1rem, 1.15vw, 1.125rem);
+  line-height: 1.55;
+  color: #b9b8b0;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  height: 2.9rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
+}
+.primary {
+  background: var(--ink);
+  color: #0b0b0b;
+}
+.primary:hover {
+  background: var(--lime);
+}
+.secondary {
+  color: var(--ink);
+  border: 1px solid rgb(242 241 236 / 0.24);
+}
+.secondary:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+.primary:active,
+.secondary:active {
+  transform: translateY(1px);
+}
+.primary:focus-visible,
+.secondary:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+/* the pause control: out of sight until someone tabs to it */
+.pause {
+  position: absolute;
+  z-index: 4;
+  right: var(--g);
+  bottom: var(--foot);
+  height: 2.5rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(242 241 236 / 0.3);
+  background: #0b0c10;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+.pause:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+
+/* ── the entrance: one orchestrated moment once the loader is gone ──
+   Only hidden when scripts run, so the text is always there without JS. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .line > span {
+    transform: translateY(108%);
+    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .line:nth-child(2) > span {
+    transition-delay: 90ms;
+  }
+  .lede,
+  .actions {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 700ms ease,
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .lede {
+    transition-delay: 380ms;
+  }
+  .actions {
+    transition-delay: 480ms;
+  }
+  .hero[data-ready] .line > span,
+  .hero[data-ready] .lede,
+  .hero[data-ready] .actions {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── tablet and phone: picture on top, words underneath ── */
+@media (max-width: 1023px) {
+  .content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+  .name {
+    font-size: clamp(2.6rem, 11vw, 5.5rem);
+  }
+  .side {
+    max-width: 34rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .content {
+    bottom: calc(var(--foot) + 1.75rem);
+  }
+  .lede {
+    font-size: 0.98rem;
+  }
+  .actions {
+    margin-top: 1.1rem;
+  }
+}

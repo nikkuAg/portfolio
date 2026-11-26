@@ -1,0 +1,162 @@
+/* AI · AJ: the 3D heroes */
+
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+}
+.canvasWrap[data-side] {
+  left: 34vw;
+  /* fade the scene in from the copy side so there is no hard edge */
+  mask-image: linear-gradient(90deg, transparent 0, #000 16%);
+}
+
+/* ── AI · garage controls ── */
+.garageHud {
+  position: absolute;
+  right: clamp(16px, 5vw, 80px);
+  bottom: clamp(88px, 11vh, 116px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  color: #ece8dc;
+}
+.rev {
+  height: 3rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: #c40c14;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -10px rgb(196 12 20 / 0.85);
+}
+.ghost {
+  height: 3rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.2);
+  background: rgb(10 10 12 / 0.5);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ghost[aria-pressed="true"] {
+  border-color: #19b35a;
+  color: #5ef29a;
+}
+.swatches {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgb(10 10 12 / 0.6);
+  border: 1px solid rgb(255 255 255 / 0.1);
+}
+.swatches button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background: linear-gradient(135deg, var(--a) 0 60%, var(--b) 60%);
+  cursor: pointer;
+}
+.swatches button[aria-checked="true"] {
+  border-color: #fff;
+}
+.rev:focus-visible,
+.ghost:focus-visible,
+.swatches button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.garageHint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #8f8b80;
+  text-align: right;
+}
+
+/* ── AJ · tiny world ── */
+.worldHud {
+  position: absolute;
+  right: clamp(16px, 5vw, 80px);
+  bottom: clamp(88px, 11vh, 116px);
+  max-width: 24rem;
+  color: #ece8dc;
+  text-align: right;
+}
+.worldTag {
+  margin: 0;
+  font-family: var(--font-ident), var(--font-geist-sans), sans-serif;
+  font-stretch: 112%;
+  font-weight: 800;
+  font-size: clamp(1.2rem, 2vw, 1.7rem);
+  color: var(--wc, #ece8dc);
+}
+.worldLine {
+  margin: 0.3rem 0 0.8rem;
+  font-size: 0.92rem;
+  color: #b9b4a8;
+}
+.worldBtns {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.worldBtns button {
+  height: 2.4rem;
+  padding: 0 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.16);
+  background: rgb(10 10 12 / 0.55);
+  color: inherit;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.worldBtns button[aria-pressed="true"] {
+  background: var(--wc, #ece8dc);
+  border-color: var(--wc, #ece8dc);
+  color: #111;
+}
+.worldBtns button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .garageHud,
+  .worldHud {
+    left: 14px;
+    right: 14px;
+    bottom: 84px;
+    max-width: none;
+  }
+  .garageHud {
+    justify-content: space-between;
+  }
+  .garageHint {
+    display: none;
+  }
+  .worldHud {
+    text-align: left;
+  }
+  .worldBtns {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .worldBtns button {
+    flex: 0 0 auto;
+  }
+  .worldLine {
+    font-size: 0.8rem;
+  }
+}

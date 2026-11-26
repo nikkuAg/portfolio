@@ -1,0 +1,171 @@
+/* AD · the booth controls */
+
+.desk {
+  position: absolute;
+  left: 46vw;
+  right: 48px;
+  bottom: clamp(88px, 11vh, 116px);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "top top"
+    "pads xfade";
+  align-items: end;
+  gap: 12px 28px;
+  color: #ece8dc;
+}
+
+.top {
+  grid-area: top;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bpm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a7a397;
+  font-variant-numeric: tabular-nums;
+}
+.led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c8ff3d;
+  animation: led calc(60s / 122) steps(1) infinite;
+}
+@keyframes led {
+  50% {
+    opacity: 0.2;
+  }
+}
+.mute {
+  height: 2.5rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.18);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.mute[aria-pressed="true"] {
+  background: #ece8dc;
+  color: #111;
+}
+
+.pads {
+  grid-area: pads;
+  display: grid;
+  grid-template-columns: repeat(4, 76px);
+  gap: 10px;
+}
+.pad {
+  position: relative;
+  height: 76px;
+  border: 0;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #232327, #18181b);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.06),
+    inset 0 -3px 0 color-mix(in srgb, var(--pc) 70%, black),
+    0 0 0 0 transparent;
+  color: #ece8dc;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 80ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+.pad:hover {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--pc) 60%, transparent),
+    inset 0 -3px 0 var(--pc);
+}
+.pad[data-hit] {
+  transform: translateY(2px) scale(0.97);
+  background: color-mix(in srgb, var(--pc) 45%, #18181b);
+  box-shadow:
+    inset 0 0 0 1px var(--pc),
+    0 0 28px 2px color-mix(in srgb, var(--pc) 55%, transparent);
+}
+.pad:focus-visible {
+  outline: 2px solid var(--pc);
+  outline-offset: 3px;
+}
+.pad kbd {
+  position: absolute;
+  right: 7px;
+  top: 6px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #77736a;
+}
+
+.xfade {
+  grid-area: xfade;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #151518;
+  border: 1px solid rgb(255 255 255 / 0.06);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.xfade span:first-child {
+  color: #c8ff3d;
+}
+.xfade span:last-child {
+  color: #ff8a6a;
+}
+.xfade input {
+  width: 100%;
+  height: 2.75rem;
+  accent-color: #ece8dc;
+  cursor: ew-resize;
+}
+
+@media (max-width: 1100px) {
+  .desk {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "top"
+      "pads"
+      "xfade";
+  }
+}
+
+@media (max-width: 767px) {
+  .desk {
+    left: 12px;
+    right: 12px;
+    bottom: 80px;
+    gap: 8px;
+  }
+  .pads {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .pad {
+    height: 56px;
+  }
+  .xfade {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led {
+    animation: none;
+  }
+}

@@ -80,11 +80,13 @@ export function Loader() {
     if (typeof window === "undefined") return;
     if (sessionStorage.getItem("loader-done") === "1") {
       setHidden(true);
+      window.dispatchEvent(new Event("loader-done"));
       return;
     }
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       sessionStorage.setItem("loader-done", "1");
       setHidden(true);
+      window.dispatchEvent(new Event("loader-done"));
       return;
     }
     if (startedRef.current) return;
@@ -122,7 +124,13 @@ export function Loader() {
     track(window.setTimeout(() => setPhase("vanishLine"), 520));
     track(window.setTimeout(() => setPhase("vanishDot"), 520 + 220));
     track(window.setTimeout(() => setPhase("done"), 520 + 220 + 180));
-    track(window.setTimeout(() => setHidden(true), 520 + 220 + 180 + 150));
+    // the hero waits for this before it plays its entrance
+    track(
+      window.setTimeout(() => {
+        setHidden(true);
+        window.dispatchEvent(new Event("loader-done"));
+      }, 520 + 220 + 180 + 150),
+    );
   }, [phase]);
 
   // ── unmount: clean any pending timers ──

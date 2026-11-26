@@ -1,0 +1,118 @@
+/* AC · the race HUD, under the circuit */
+
+.hud {
+  position: absolute;
+  left: 46vw;
+  right: clamp(16px, 6vw, 96px);
+  bottom: clamp(88px, 11vh, 120px);
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  grid-template-areas:
+    "tower lights lights"
+    "go result result";
+  align-items: center;
+  gap: 14px 18px;
+  color: #f3efe6;
+}
+
+.tower {
+  grid-area: tower;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #16171a;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d0101a;
+  box-shadow: 0 0 8px #d0101a;
+}
+
+.lights {
+  grid-area: lights;
+  display: flex;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #0a0a0b;
+  justify-self: start;
+}
+.lights i {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #2b1214, #140708 70%);
+  transition: background 60ms linear, box-shadow 60ms linear;
+}
+.lights i[data-on] {
+  background: radial-gradient(circle at 40% 35%, #ffb3a8, #ff2d20 45%, #b30d06);
+  box-shadow: 0 0 12px 3px rgb(255 45 32 / 0.6);
+}
+
+.go {
+  grid-area: go;
+  height: 3.1rem;
+  min-width: 9rem;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: #d0101a;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.02rem;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -10px rgb(208 16 26 / 0.8);
+  transition: transform 120ms ease, background-color 160ms ease;
+}
+.go:hover {
+  transform: translateY(-1px);
+}
+.go:active {
+  transform: translateY(1px);
+}
+.go[data-phase="grid"],
+.go[data-phase="lights"] {
+  background: #3a1416;
+}
+.go[data-phase="racing"] {
+  background: #19b35a;
+  box-shadow: 0 10px 30px -10px rgb(25 179 90 / 0.8);
+}
+.go:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.result {
+  grid-area: result;
+  margin: 0;
+  max-width: 36ch;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #b9b4a8;
+}
+
+@media (max-width: 767px) {
+  .hud {
+    left: 14px;
+    right: 14px;
+    bottom: 84px;
+    gap: 10px 12px;
+  }
+  .result {
+    font-size: 0.8rem;
+  }
+  .go {
+    min-width: 7.5rem;
+  }
+}

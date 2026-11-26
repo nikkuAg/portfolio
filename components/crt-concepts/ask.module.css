@@ -1,0 +1,156 @@
+/* AB · the hero answers back */
+
+.talk {
+  position: absolute;
+  right: clamp(16px, 5vw, 80px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(40rem, 48vw);
+  color: #f2efe7;
+}
+
+.q {
+  margin: 0 0 0.9rem;
+  font-size: 1rem;
+  color: #c9c5ba;
+}
+.you {
+  margin-right: 0.4rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  color: #8f8b80;
+  font-size: 0.78rem;
+}
+
+.a {
+  margin: 0;
+  min-height: 3.4em;
+  font-family: var(--font-ident), var(--font-geist-sans), sans-serif;
+  font-stretch: 108%;
+  font-weight: 650;
+  font-size: clamp(1.5rem, 2.6vw, 2.35rem);
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+
+.caret {
+  display: inline-block;
+  width: 0.08em;
+  height: 0.95em;
+  margin-left: 0.06em;
+  vertical-align: -0.1em;
+  background: #ffb547;
+}
+.caret[data-done] {
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ctaRow {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.ctaRow a {
+  display: inline-flex;
+  align-items: center;
+  height: 2.6rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 181 71 / 0.5);
+  color: #ffd27a;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.8rem;
+}
+.chips button {
+  height: 2.6rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: transparent;
+  color: #d9d5ca;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.chips button:hover {
+  border-color: rgb(255 255 255 / 0.4);
+}
+.chips button[aria-pressed="true"] {
+  background: #f2efe7;
+  color: #111;
+  border-color: #f2efe7;
+}
+.chips button:focus-visible,
+.form input:focus-visible,
+.form button:focus-visible {
+  outline: 2px solid #ffb547;
+  outline-offset: 2px;
+}
+
+.form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+  max-width: 28rem;
+}
+.form input {
+  flex: 1;
+  height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.04);
+  color: #f2efe7;
+  font: inherit;
+  font-size: 16px;
+}
+.form button {
+  height: 2.75rem;
+  padding: 0 1.1rem;
+  border-radius: 999px;
+  border: 0;
+  background: #ffb547;
+  color: #1a1206;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .talk {
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: 84px;
+    transform: none;
+    width: auto;
+  }
+  .a {
+    min-height: 4.6em;
+    font-size: 1.25rem;
+  }
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin-top: 1rem;
+  }
+  .chips button {
+    flex: 0 0 auto;
+  }
+}

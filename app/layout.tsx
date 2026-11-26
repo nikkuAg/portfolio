@@ -4,6 +4,7 @@ import {
   Geist_Mono,
   Chakra_Petch,
   Sacramento,
+  Archivo,
 } from "next/font/google";
 import "./globals.css";
 import { LenisProvider } from "@/components/providers/LenisProvider";
@@ -41,6 +42,14 @@ const sacramento = Sacramento({
   variable: "--font-signature",
   subsets: ["latin"],
   weight: ["400"],
+});
+
+// the hero's wide display face: the name is set in Archivo's expanded cut,
+// and the ink morph draws its lettering in the same face
+const archivo = Archivo({
+  variable: "--font-ident",
+  subsets: ["latin"],
+  axes: ["wdth"],
 });
 
 export const metadata: Metadata = {
@@ -130,7 +139,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${chakraPetch.variable} ${sacramento.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${chakraPetch.variable} ${sacramento.variable} ${archivo.variable}`}
     >
       <body className="bg-background text-foreground font-sans antialiased">
         {/* keyboard skip link — first focusable element, hidden until focused */}
