@@ -25,6 +25,9 @@ type Scene = {
   image?: boolean;
   /** where on the page it goes, on screens wide enough to choose */
   place?: "side" | "band" | "left";
+  /** seen from above, so on a tall screen it may be turned a quarter to
+   *  fill the space */
+  turn?: boolean;
   /** Once the picture has landed it keeps playing: this moves each point
    *  (u, v in the drawing's own units) by its part and the time held. */
   move?: Move;
@@ -83,11 +86,23 @@ function part(o: CanvasRenderingContext2D, id: number) {
 
 /** Draw in a unit space (uw × uh) centred and scaled to fit the box. */
 let fitK = 1;
+let fitDX = 0;
+let fitDY = 0;
 function fit(o: CanvasRenderingContext2D, w: number, h: number, uw: number, uh: number, fill = 0.9) {
   const k = Math.min(w / uw, h / uh) * fill;
   fitK = k;
+  fitDX = 0;
+  fitDY = 0;
   o.translate(w / 2, h / 2);
   o.scale(k, k);
+}
+/** Move the drawing within its box, in its own units. Unlike a bare
+ *  translate this is recorded, so the scene's move() still gets its own
+ *  coordinates. */
+function shift(o: CanvasRenderingContext2D, dx: number, dy: number) {
+  fitDX += dx;
+  fitDY += dy;
+  o.translate(dx, dy);
 }
 
 // the face looks at the name, then glances the other way, then back at you
@@ -398,6 +413,7 @@ const dj: Scene = {
   label: "DJ",
   caption: "DJing, my newest habit",
   place: "band",
+  turn: true,
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 204, 100, 0.95);
@@ -726,6 +742,7 @@ const board: Scene = {
   label: "Board games",
   caption: "board games, the longer the better",
   place: "left",
+  turn: true,
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 220, 146, 0.95);
@@ -885,16 +902,24 @@ const code: Scene = {
   place: "band",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 228, 126, 0.96);
+    // the code only fills the left of a wide window; wherever the wide one
+    // would be held back by the width (anything but a wide band) the
+    // window closes in round it, so the whole editor can be drawn far bigger
+    const tall = h > w * 0.55;
+    const right = tall ? 14 : 110;
+    if (tall) {
+      fit(o, w, h, 128, 126, 0.96);
+      shift(o, 48, 0);
+    } else fit(o, w, h, 228, 126, 0.96);
     part(o, 0);
     o.lineWidth = 2.2;
     o.beginPath();
-    o.roundRect(-110, -58, 220, 116, 8);
+    o.roundRect(-110, -58, 110 + right, 116, 8);
     o.stroke();
     o.lineWidth = 1.2;
     o.beginPath();
     o.moveTo(-110, -45);
-    o.lineTo(110, -45);
+    o.lineTo(right, -45);
     o.stroke();
     for (const dx of [0, 8, 16]) {
       o.beginPath();
@@ -1060,7 +1085,7 @@ function stipple(d: Uint8ClampedArray, W: number, H: number, n: number, top: num
     tx[i] = xs[j] + (Math.random() - 0.5) * extra;
     ty[i] = ys[j] + (Math.random() - 0.5) * extra;
   }
-  return { tx, ty, part: pt, k: 1 };
+  return { tx, ty, part: pt, k: 1, dx: 0, dy: 0, rot: false };
 }
 
 /** Turn a scene into exactly n target points inside the box. */
@@ -1071,6 +1096,8 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
   const o = c.getContext("2d", { willReadFrequently: true })!;
   part(o, 0);
   fitK = 1;
+  fitDX = 0;
+  fitDY = 0;
   if (scene.image && img) {
     // fit the portrait; the stippling decides where the threads go. The box
     // around it is painted the wall's own colour first, so the photo's
@@ -1087,7 +1114,16 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
     o.drawImage(img, x0, y0, iw, ih);
     return stipple(o.getImageData(0, 0, c.width, c.height).data, c.width, c.height, n, y0, ih);
   }
-  scene.draw(o, c.width, c.height);
+  // a top-down picture in a tall box is drawn a quarter turn round, so it
+  // fills the height instead of shrinking to the width
+  // (for a 2:1 controller or a 3:2 board that wins once the box is square)
+  const rot = !!scene.turn && c.height > c.width;
+  if (rot) {
+    o.translate(c.width / 2, c.height / 2);
+    o.rotate(-Math.PI / 2);
+    o.translate(-c.height / 2, -c.width / 2);
+    scene.draw(o, c.height, c.width);
+  } else scene.draw(o, c.width, c.height);
   const d = o.getImageData(0, 0, c.width, c.height).data;
   const xs: number[] = [];
   const ys: number[] = [];
@@ -1123,7 +1159,7 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
     ty[i] = ys[j] + Math.random() * 2;
     pt[i] = ps[j];
   }
-  return { tx, ty, part: pt, k: fitK };
+  return { tx, ty, part: pt, k: fitK, dx: fitDX, dy: fitDY, rot };
 }
 
 
@@ -1225,7 +1261,18 @@ export function MorphField({ go }: { go: boolean }) {
     // delay, so a picture streams in from everywhere instead of snapping
     let ambient = new Uint8Array(0);
     let delay = new Float32Array(0);
-    type Target = { tx: Float32Array; ty: Float32Array; part: Uint8Array; k: number; meta: Meta; b: Box };
+    type Target = {
+      tx: Float32Array;
+      ty: Float32Array;
+      part: Uint8Array;
+      k: number;
+      /** how far the drawing was shifted in its box, and whether it was turned */
+      dx: number;
+      dy: number;
+      rot: boolean;
+      meta: Meta;
+      b: Box;
+    };
     let targets: (Target | null)[] = [];
     // where each point is asked to be this frame, and last frame: a jump
     // (a speed line wrapping round, the cursor blinking) moves the point with
@@ -1458,9 +1505,16 @@ export function MorphField({ go }: { go: boolean }) {
           if (live > 0 && !ambient[i]) {
             const u = (gx - cx0) / tgt.k;
             const v = (gy - cy0) / tgt.k;
-            sc.move!(mv, u, v, tgt.part[i], i, ht, tgt.meta);
-            gx = cx0 + (u + (mv.x - u) * live) * tgt.k;
-            gy = cy0 + (v + (mv.y - v) * live) * tgt.k;
+            // into the drawing's own units: undo the quarter turn and the shift
+            const du = (tgt.rot ? -v : u) - tgt.dx;
+            const dv = (tgt.rot ? u : v) - tgt.dy;
+            sc.move!(mv, du, dv, tgt.part[i], i, ht, tgt.meta);
+            const rx = mv.x + tgt.dx;
+            const ry = mv.y + tgt.dy;
+            const su = tgt.rot ? ry : rx;
+            const sv = tgt.rot ? -rx : ry;
+            gx = cx0 + (u + (su - u) * live) * tgt.k;
+            gy = cy0 + (v + (sv - v) * live) * tgt.k;
           }
           goalX[i] = gx;
           goalY[i] = gy;
