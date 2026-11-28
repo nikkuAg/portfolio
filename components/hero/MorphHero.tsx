@@ -2,12 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { RESUME_URL } from "@/lib/site";
-import { smoothScrollTo } from "@/lib/scroll";
 import s from "./morph.module.css";
 
 // The canvas only ever loads on the client, after the HTML below is on
-// screen: the name, the line about me and both ways out are real text from
+// screen: the name and the line about me are real text from
 // the first paint, readable with no JavaScript at all.
 const MorphField = dynamic(() => import("./MorphField").then((m) => m.MorphField), {
   ssr: false,
@@ -54,21 +52,6 @@ export function MorphHero() {
             Full-stack engineer in Bangalore. I build interfaces, the services
             behind them, and small games on the side.
           </p>
-          <div className={s.actions}>
-            <a className={s.primary} href={RESUME_URL} target="_blank" rel="noreferrer">
-              Résumé (PDF)
-            </a>
-            <a
-              className={s.secondary}
-              href="#projects"
-              onClick={(e) => {
-                e.preventDefault();
-                smoothScrollTo("#projects");
-              }}
-            >
-              Skip to projects
-            </a>
-          </div>
         </div>
       </div>
     </section>

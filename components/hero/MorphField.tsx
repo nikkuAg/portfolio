@@ -9,7 +9,9 @@ import s from "./morph.module.css";
 // the next; the rest never settle and keep the whole screen inked. While a
 // picture holds it plays: the face looks round, the car launches, the pad
 // is played, the decks are mixed, the drums are played, the dice are thrown, the code types itself.
-// The pointer is a predator: threads near it scatter and glow, then come back.
+// The pictures never follow the pointer. Moving it through the ink sweeps
+// the dots it crosses along with it, harder the faster it moves; they glow
+// lime, then drift back into place.
 
 /** Where a held picture's points go at a moment of its hold. */
 type Meta = { cx: number; cy: number; rx: number; ry: number; yaw: number; pitch: number };
@@ -908,6 +910,127 @@ const code: Scene = {
   },
 };
 
+/**
+ * The portrait as n evenly spaced dots, like a halftone print. A positive:
+ * ink where the face is lit and none where it's dark (hair, brows, eyes,
+ * beard), with extra ink tracing strong edges (glasses, the beard line) and
+ * the head's outline. The dots come from error diffusion rather than random
+ * picks, so they sit evenly and the features stay crisp instead of noisy.
+ * The wall behind is removed by flooding in from the borders, and the
+ * shoulders fade out so the picture ends softly under the chin.
+ */
+function stipple(d: Uint8ClampedArray, W: number, H: number, n: number, top: number, ph: number) {
+  const L = new Float32Array(W * H);
+  const S = new Float32Array(W * H);
+  for (let p = 0; p < W * H; p++) {
+    const r = d[p * 4];
+    const g = d[p * 4 + 1];
+    const b = d[p * 4 + 2];
+    L[p] = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const mx = Math.max(r, g, b);
+    S[p] = mx ? (mx - Math.min(r, g, b)) / mx : 0;
+  }
+  // a light blur, so skin grain and single hairs don't count as edges
+  const blurred = new Float32Array(W * H);
+  {
+    const tmp = new Float32Array(W * H);
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const p = y * W + x;
+        tmp[p] = (L[x > 0 ? p - 1 : p] + L[p] + L[x < W - 1 ? p + 1 : p]) / 3;
+      }
+    for (let y = 0; y < H; y++)
+      for (let x = 0; x < W; x++) {
+        const p = y * W + x;
+        blurred[p] = (tmp[y > 0 ? p - W : p] + tmp[p] + tmp[y < H - 1 ? p + W : p]) / 3;
+      }
+  }
+  // the wall: light and colourless, reached from the edges
+  const wall = new Uint8Array(W * H);
+  const isWall = (p: number) => blurred[p] > 0.66 && S[p] < 0.16;
+  const stack: number[] = [];
+  for (let x = 0; x < W; x++) stack.push(x, (H - 1) * W + x);
+  for (let y = 0; y < H; y++) stack.push(y * W, y * W + W - 1);
+  while (stack.length) {
+    const p = stack.pop()!;
+    if (wall[p] || !isWall(p)) continue;
+    wall[p] = 1;
+    const x = p % W;
+    if (x > 0) stack.push(p - 1);
+    if (x < W - 1) stack.push(p + 1);
+    if (p >= W) stack.push(p - W);
+    if (p < W * (H - 1)) stack.push(p + W);
+  }
+  const D = new Float32Array(W * H);
+  let sum = 0;
+  const r3 = Math.max(2, Math.round(Math.min(W, H) / 180));
+  for (let y = 1; y < H - 1; y++) {
+    const fy = (y - top) / ph;
+    const fade = fy < 0.78 ? 1 : Math.max(0, 1 - (fy - 0.78) / 0.14);
+    if (!fade) continue;
+    for (let x = 1; x < W - 1; x++) {
+      const p = y * W + x;
+      if (wall[p]) continue;
+      const B = blurred;
+      const gx = B[p - W + 1] + 2 * B[p + 1] + B[p + W + 1] - B[p - W - 1] - 2 * B[p - 1] - B[p + W - 1];
+      const gy = B[p + W - 1] + 2 * B[p + W] + B[p + W + 1] - B[p - W - 1] - 2 * B[p - W] - B[p - W + 1];
+      const edge = Math.min(1, (Math.hypot(gx, gy) / 4) * 3);
+      const rim =
+        (x >= r3 && wall[p - r3]) || (x < W - r3 && wall[p + r3]) || (y >= r3 && wall[p - r3 * W]) || (y < H - r3 && wall[p + r3 * W]) ? 1 : 0;
+      const v = fade * (smooth(0.25, 0.75, B[p]) ** 1.5 + 0.9 * edge + rim);
+      D[p] = v;
+      sum += v;
+    }
+  }
+  const tx = new Float32Array(n);
+  const ty = new Float32Array(n);
+  const pt = new Uint8Array(n);
+  if (!sum) return null;
+  // Floyd–Steinberg, serpentine, on the density scaled to about n dots
+  const a = n / sum;
+  for (let p = 0; p < W * H; p++) D[p] *= a;
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let y = 0; y < H; y++) {
+    const ltr = y % 2 === 0;
+    const dx = ltr ? 1 : -1;
+    for (let k = 0; k < W; k++) {
+      const x = ltr ? k : W - 1 - k;
+      const p = y * W + x;
+      const v = D[p];
+      const on = v >= 0.5 ? 1 : 0;
+      if (on) {
+        xs.push(x);
+        ys.push(y);
+      }
+      const e = v - on;
+      const fwd = x + dx >= 0 && x + dx < W;
+      const back = x - dx >= 0 && x - dx < W;
+      if (fwd) D[p + dx] += (e * 7) / 16;
+      if (y + 1 < H) {
+        if (back) D[p + W - dx] += (e * 3) / 16;
+        D[p + W] += (e * 5) / 16;
+        if (fwd) D[p + W + dx] += (e * 1) / 16;
+      }
+    }
+  }
+  const m = xs.length;
+  if (!m) return null;
+  // exactly n: a shuffled pass over the dots, repeating with a nudge if short
+  const order = Array.from({ length: m }, (_, i) => i);
+  for (let i = m - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  for (let i = 0; i < n; i++) {
+    const j = order[i % m];
+    const extra = i >= m ? 1.5 : 0.3;
+    tx[i] = xs[j] + (Math.random() - 0.5) * extra;
+    ty[i] = ys[j] + (Math.random() - 0.5) * extra;
+  }
+  return { tx, ty, part: pt, k: 1 };
+}
+
 /** Turn a scene into exactly n target points inside the box. */
 function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageElement | null) {
   const c = document.createElement("canvas");
@@ -917,57 +1040,28 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
   part(o, 0);
   fitK = 1;
   if (scene.image && img) {
-    // fit the portrait; the stippling below decides where the threads go
+    // fit the portrait; the stippling decides where the threads go. The box
+    // around it is painted the wall's own colour first, so the photo's
+    // borders don't read as edges
     const k = Math.min(c.width / img.width, c.height / img.height);
     const iw = img.width * k;
     const ih = img.height * k;
-    o.drawImage(img, (c.width - iw) / 2, (c.height - ih) / 2, iw, ih);
-  } else scene.draw(o, c.width, c.height);
+    const x0 = (c.width - iw) / 2;
+    const y0 = (c.height - ih) / 2;
+    o.drawImage(img, x0, y0, iw, ih);
+    const [r, g, b] = o.getImageData(Math.round(x0 + 3), Math.round(y0 + 3), 1, 1).data;
+    o.fillStyle = `rgb(${r},${g},${b})`;
+    o.fillRect(0, 0, c.width, c.height);
+    o.drawImage(img, x0, y0, iw, ih);
+    return stipple(o.getImageData(0, 0, c.width, c.height).data, c.width, c.height, n, y0, ih);
+  }
+  scene.draw(o, c.width, c.height);
   const d = o.getImageData(0, 0, c.width, c.height).data;
   const xs: number[] = [];
   const ys: number[] = [];
   const ws: number[] = [];
   const ps: number[] = [];
-  if (scene.image) {
-    // A portrait in light dots on a dark page has to be a positive: ink where
-    // the face is lit, plus extra ink along strong edges (hairline, glasses,
-    // eyes, the beard line) so the features stay readable. The plain wall
-    // behind (light and nearly colourless) gets none, except where the head
-    // meets it, which keeps the outline.
-    const W = c.width;
-    const H = c.height;
-    const L = new Float32Array(W * H);
-    const wall = new Uint8Array(W * H);
-    for (let p = 0; p < W * H; p++) {
-      const r = d[p * 4];
-      const g = d[p * 4 + 1];
-      const b = d[p * 4 + 2];
-      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-      const mx = Math.max(r, g, b);
-      const sat = mx ? (mx - Math.min(r, g, b)) / mx : 0;
-      L[p] = lum;
-      wall[p] = d[p * 4 + 3] < 128 || (lum > 0.7 && sat < 0.14) ? 1 : 0;
-    }
-    for (let y = 1; y < H - 1; y += 2) {
-      for (let x = 1; x < W - 1; x += 2) {
-        const p = y * W + x;
-        // ignore the photo's own border against the empty canvas
-        if (d[(p - 2) * 4 + 3] < 128 || d[(p + 2) * 4 + 3] < 128 || d[(p - 2 * W) * 4 + 3] < 128 || d[(p + 2 * W) * 4 + 3] < 128) continue;
-        const gx = L[p - W + 1] + 2 * L[p + 1] + L[p + W + 1] - L[p - W - 1] - 2 * L[p - 1] - L[p + W - 1];
-        const gy = L[p + W - 1] + 2 * L[p + W] + L[p + W + 1] - L[p - W - 1] - 2 * L[p - W] - L[p - W + 1];
-        const raw = Math.min(1, (Math.hypot(gx, gy) / 4) * 2.2);
-        // faint texture (hair strands, skin grain) isn't a feature
-        const edge = raw < 0.16 ? 0 : raw;
-        if (wall[p] && edge < 0.4) continue;
-        const wgt = (wall[p] ? 0 : 0.5 * Math.pow(L[p], 2.2)) + 2 * Math.pow(edge, 1.2);
-        if (wgt < 0.06) continue;
-        xs.push(x);
-        ys.push(y);
-        ws.push(wgt);
-        ps.push(0);
-      }
-    }
-  } else {
+  {
     for (let y = 0; y < c.height; y += 2) {
       for (let x = 0; x < c.width; x += 2) {
         const q = (y * c.width + x) * 4;
@@ -1025,7 +1119,7 @@ function pictureBox(canvas: HTMLCanvasElement, w: number, h: number) {
     const x = w * 0.5;
     return { x, y: top, w: w - x - g, h: h - top - (h < 520 ? 16 : 28) };
   }
-  if (w >= 1024) {
+  if (w >= 1024 && w > h) {
     // follow the words' frame, which stops growing past 2200px on ultrawides
     const fl = Math.max(g, (w - 2200) / 2);
     const fw = w - fl * 2;
@@ -1135,9 +1229,10 @@ export function MorphField({ go }: { go: boolean }) {
     let phaseStart = 0;
     let started = false;
     let startedAt = 0;
-    let leanX = 0;
-    let leanY = 0;
-    const pointer = { x: -1e4, y: -1e4, at: -1e9 };
+    // the pointer: where it is, how far it has moved since the last frame
+    // (dx, dy) and its smoothed velocity per frame (vx, vy). Only movement
+    // stirs the ink; a resting pointer leaves the picture alone
+    const pointer = { x: -1e4, y: -1e4, dx: 0, dy: 0, vx: 0, vy: 0, on: false };
 
     // on the first frame after the go signal, every thread starts on the
     // edge of the screen, so the first picture streams in from all sides
@@ -1293,8 +1388,16 @@ export function MorphField({ go }: { go: boolean }) {
       c.fillRect(0, 0, w, h);
 
       const t = now / 1000;
-      const stir = now - pointer.at < 2500;
-      const R = Math.max(70, Math.min(w, h) * 0.12);
+      // the pointer's speed this frame, smoothed so one jumpy event doesn't
+      // blast the picture and a stop lets it settle within a few frames
+      pointer.vx = pointer.vx * 0.55 + pointer.dx * 0.45;
+      pointer.vy = pointer.vy * 0.55 + pointer.dy * 0.45;
+      pointer.dx = 0;
+      pointer.dy = 0;
+      const speed = Math.min(80, Math.hypot(pointer.vx, pointer.vy));
+      const stir = pointer.on && speed > 0.4;
+      // a faster sweep reaches further
+      const R = Math.max(44, Math.min(w, h) * 0.07) * (0.7 + 0.6 * Math.min(1, speed / 40));
       const R2 = R * R;
       const ns = 0.0022;
       // the speed limit grows with the screen, so the ink arrives as quickly
@@ -1302,16 +1405,14 @@ export function MorphField({ go }: { go: boolean }) {
       const cap = 2.2 * Math.max(1, Math.min(w, h) / 820);
 
       // while a picture holds it stays alive: it breathes (a slow, slight
-      // swell), every dot circles its spot, and the whole picture leans a
-      // little towards the pointer
+      // swell) and every dot circles its spot. It stays where it is: the
+      // pointer moves dots, never the picture
       const B = tgt ? tgt.b : box;
       const cx0 = B.x + B.w / 2;
       const cy0 = B.y + B.h / 2;
       const breath = 1 + 0.016 * Math.sin(t * 0.9);
-      const wob = Math.max(1.2, Math.min(B.w, B.h) * 0.0045);
-      const leanTo = (v: number, centre: number, span: number) => Math.max(-span, Math.min(span, (v - centre) * 0.035));
-      leanX += ((stir ? leanTo(pointer.x, cx0, 18) : 0) - leanX) * 0.04;
-      leanY += ((stir ? leanTo(pointer.y, cy0, 12) : 0) - leanY) * 0.04;
+      // a portrait keeps still enough for its features to stay sharp
+      const wob = Math.max(1.2, Math.min(B.w, B.h) * 0.0045) * (list[sceneIdx].image ? 0.3 : 1);
 
       // the held picture plays: each scene moves its own parts. It starts
       // just before the picture fully lands, so the motion grows out of it
@@ -1382,7 +1483,9 @@ export function MorphField({ go }: { go: boolean }) {
           ay += (gy - y[i]) * 0.3;
         } else if (tgt && pi > 0) {
           // a playing picture follows its motion tightly; forming ink stays loose
-          const k = 0.012 + pi * 0.05 + (pi > 0.99 ? live * 0.16 : 0);
+          // dots the pointer has just swept aside drift home more slowly,
+          // so the wake stays visible for a moment before the picture heals
+          const k = (0.012 + pi * 0.05 + (pi > 0.99 ? live * 0.16 : 0)) * (1 - 0.8 * fear[i]);
           if (holding) {
             const jx = goalX[i] - lastX[i];
             const jy = goalY[i] - lastY[i];
@@ -1393,8 +1496,8 @@ export function MorphField({ go }: { go: boolean }) {
               py[i] = y[i];
             }
           }
-          const gx = cx0 + (goalX[i] - cx0) * breath + Math.sin(t * 1.3 + i * 0.71) * wob + leanX;
-          const gy = cy0 + (goalY[i] - cy0) * breath + Math.cos(t * 1.1 + i * 0.53) * wob + leanY;
+          const gx = cx0 + (goalX[i] - cx0) * breath + Math.sin(t * 1.3 + i * 0.71) * wob;
+          const gy = cy0 + (goalY[i] - cy0) * breath + Math.cos(t * 1.1 + i * 0.53) * wob;
           ax += (gx - x[i]) * k * pi;
           ay += (gy - y[i]) * k * pi;
         }
@@ -1405,17 +1508,20 @@ export function MorphField({ go }: { go: boolean }) {
           ax *= cap / am;
           ay *= cap / am;
         }
-        let f = fear[i] * 0.95;
+        let f = fear[i] * 0.96;
         if (stir) {
           const dx = x[i] - pointer.x;
           const dy = y[i] - pointer.y;
           const d2 = dx * dx + dy * dy;
           if (d2 < R2 && d2 > 0.01) {
+            // the dots under a moving pointer are carried along the way it
+            // moves and parted to either side, both as hard as it moves
             const d = Math.sqrt(d2);
             const near = 1 - d / R;
-            ax += (dx / d) * near * near * 9;
-            ay += (dy / d) * near * near * 9;
-            f = Math.max(f, near);
+            const push = near * near;
+            ax += (pointer.vx * 0.5 + (dx / d) * speed * 0.18) * push;
+            ay += (pointer.vy * 0.5 + (dy / d) * speed * 0.18) * push;
+            f = Math.max(f, near * Math.min(1, speed / 22));
           }
         }
         fear[i] = f;
@@ -1497,9 +1603,21 @@ export function MorphField({ go }: { go: boolean }) {
 
     function onMove(e: PointerEvent) {
       const r = canvas!.getBoundingClientRect();
-      pointer.x = e.clientX - r.left;
-      pointer.y = e.clientY - r.top;
-      pointer.at = performance.now();
+      const nx = e.clientX - r.left;
+      const ny = e.clientY - r.top;
+      // a fresh touch or a pointer coming back in starts from rest
+      if (pointer.on && e.type === "pointermove") {
+        pointer.dx += nx - pointer.x;
+        pointer.dy += ny - pointer.y;
+      }
+      pointer.x = nx;
+      pointer.y = ny;
+      pointer.on = true;
+    }
+    function onLeave() {
+      pointer.on = false;
+      pointer.vx = 0;
+      pointer.vy = 0;
     }
 
     let tm = 0;
@@ -1528,12 +1646,16 @@ export function MorphField({ go }: { go: boolean }) {
     const hero = canvas.closest("section") ?? canvas;
     hero.addEventListener("pointermove", onMove as EventListener);
     hero.addEventListener("pointerdown", onMove as EventListener);
+    hero.addEventListener("pointerleave", onLeave);
+    hero.addEventListener("pointerup", onLeave);
     window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
       hero.removeEventListener("pointermove", onMove as EventListener);
       hero.removeEventListener("pointerdown", onMove as EventListener);
+      hero.removeEventListener("pointerleave", onLeave);
+      hero.removeEventListener("pointerup", onLeave);
       window.removeEventListener("resize", onResize);
     };
   }, []);
