@@ -28,6 +28,9 @@ type Scene = {
   /** seen from above, so on a tall screen it may be turned a quarter to
    *  fill the space */
   turn?: boolean;
+  /** side-on pictures that can't turn have a second drawing, composed to
+   *  stand tall, used whenever their box is nearly as tall as it is wide */
+  tall?: Scene;
   /** Once the picture has landed it keeps playing: this moves each point
    *  (u, v in the drawing's own units) by its part and the time held. */
   move?: Move;
@@ -137,12 +140,148 @@ const face: Scene = {
   },
 };
 
+// The car for tall screens: seen from above, nose up, so it can be drawn
+// tall. It idles, launches up the screen, and the track streams past.
+// parts: 0 body, 1 rear tyres, 2 front tyres, 3 the track's dashes
+const F1_TYRES: { id: number; x: number; y: number; w: number; h: number }[] = [
+  { id: 2, x: -37, y: -74, w: 13, h: 24 },
+  { id: 2, x: 24, y: -74, w: 13, h: 24 },
+  { id: 1, x: -41, y: 52, w: 16, h: 30 },
+  { id: 1, x: 25, y: 52, w: 16, h: 30 },
+];
+const f1Tall: Scene = {
+  id: "f1",
+  label: "F1",
+  caption: "F1, and Ferrari",
+  draw(o, w, h) {
+    o.save();
+    fit(o, w, h, 100, 232, 0.95);
+    o.lineCap = "round";
+    part(o, 0);
+    // front wing: two elements and endplates
+    o.fillRect(-38, -104, 76, 5);
+    o.fillRect(-35, -97, 70, 3);
+    o.fillRect(-41, -107, 4, 15);
+    o.fillRect(37, -107, 4, 15);
+    // nose, then the chassis widening into the sidepods and back to the gearbox
+    o.beginPath();
+    o.moveTo(-4, -95);
+    o.lineTo(4, -95);
+    o.lineTo(9, -40);
+    o.lineTo(12, -22);
+    o.lineTo(25, -10);
+    o.lineTo(26, 28);
+    o.quadraticCurveTo(24, 50, 12, 62);
+    o.lineTo(9, 80);
+    o.lineTo(-9, 80);
+    o.lineTo(-12, 62);
+    o.quadraticCurveTo(-24, 50, -26, 28);
+    o.lineTo(-25, -10);
+    o.lineTo(-12, -22);
+    o.lineTo(-9, -40);
+    o.closePath();
+    o.fill();
+    // the cockpit cut out, the helmet in it, and the engine cover's lines
+    o.globalCompositeOperation = "destination-out";
+    o.beginPath();
+    o.ellipse(0, -13, 7, 12, 0, 0, Math.PI * 2);
+    o.fill();
+    o.lineWidth = 1.3;
+    for (const x of [-15, 15]) {
+      o.beginPath();
+      o.moveTo(x, 2);
+      o.lineTo(x * 0.9, 40);
+      o.stroke();
+    }
+    o.globalCompositeOperation = "source-over";
+    o.beginPath();
+    o.arc(0, -15, 5, 0, Math.PI * 2);
+    o.fill();
+    // suspension arms
+    o.lineWidth = 1.8;
+    for (const [x0, y0, x1, y1] of [
+      [-8, -64, -25, -63],
+      [-8, -54, -25, -59],
+      [8, -64, 25, -63],
+      [8, -54, 25, -59],
+      [-12, 62, -26, 65],
+      [-11, 72, -26, 70],
+      [12, 62, 26, 65],
+      [11, 72, 26, 70],
+    ]) {
+      o.beginPath();
+      o.moveTo(x0, y0);
+      o.lineTo(x1, y1);
+      o.stroke();
+    }
+    // rear wing
+    o.fillRect(-34, 86, 68, 6);
+    o.fillRect(-32, 94, 64, 3);
+    o.fillRect(-37, 84, 4, 15);
+    o.fillRect(33, 84, 4, 15);
+    // tyres, each in a gap, with tread cut across so you can see them roll
+    for (const t of F1_TYRES) {
+      o.globalCompositeOperation = "destination-out";
+      o.beginPath();
+      o.roundRect(t.x - 1.5, t.y - 1.5, t.w + 3, t.h + 3, 4);
+      o.fill();
+      o.globalCompositeOperation = "source-over";
+      part(o, t.id);
+      o.beginPath();
+      o.roundRect(t.x, t.y, t.w, t.h, 3);
+      o.fill();
+      o.globalCompositeOperation = "destination-out";
+      for (let y = t.y + 4; y < t.y + t.h - 2; y += 5) o.fillRect(t.x, y, t.w, 1.3);
+      o.globalCompositeOperation = "source-over";
+    }
+    // the track: dashed lines either side
+    part(o, 3);
+    o.lineWidth = 1.8;
+    o.setLineDash([7, 7]);
+    for (const x of [-48, 48]) {
+      o.beginPath();
+      o.moveTo(x, -112);
+      o.lineTo(x, 112);
+      o.stroke();
+    }
+    o.setLineDash([]);
+    o.restore();
+  },
+  move(out, u, v, p, i, ht) {
+    const launch = smooth(0.8, 1.9, ht);
+    // how far the car has travelled: an idle creep, then the launch
+    const run = Math.max(0, ht) * 26 + Math.max(0, ht - 0.8) * 160;
+    if (p === 3) {
+      out.x = u;
+      out.y = -112 + mod(v + 112 + run, 224);
+      return;
+    }
+    let x = u;
+    let y = v;
+    if (p === 1 || p === 2) {
+      // the tread rolls through each tyre
+      const t = F1_TYRES.find((q) => q.id === p && u >= q.x - 2 && u <= q.x + q.w + 2) ?? F1_TYRES[p === 2 ? 0 : 2];
+      y = t.y + mod(v - t.y + run * 0.35, t.h);
+      if (p === 2) {
+        // a little steering on the line, straight once it goes
+        turn(out, x, y, t.x + t.w / 2, t.y + t.h / 2, 0.12 * Math.sin(ht * 2.6) * (1 - launch));
+        x = out.x;
+        y = out.y;
+      }
+    }
+    const surge = easeOut((ht - 0.8) / 1.4) * 12 - 1.6 * (bump(ht, 2.6, 0.12) + bump(ht, 3.8, 0.12));
+    out.x = x + (1 - launch * 0.5) * 0.5 * Math.sin(ht * 63 + (i & 7));
+    out.y = y - surge;
+  },
+};
+
 // parts: 0 body, 1 rear wheel, 2 front wheel, 3 speed lines
 const f1: Scene = {
   id: "f1",
   label: "F1",
   caption: "F1, and Ferrari",
   place: "band",
+  tall: f1Tall,
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 272, 66, 0.96);
@@ -310,11 +449,121 @@ const DIRS: [number, number][] = [
 ];
 const press = (ht: number, at: number) => smooth(at, at + 0.03, ht) * (1 - smooth(at + 0.13, at + 0.22, ht));
 
+// Games for tall screens: a handheld console with a little runner game on
+// its screen. The runner jumps each block as it comes, and the button goes
+// down as it jumps. The body is drawn in outline, the controls solid.
+// parts: 0 body, screen frame and ground, 1 A, 2 B,
+// 3 select, 4 start, 5 d-pad, 9 the runner, 10–11 the blocks
+const HH_A: [number, number] = [30, 22];
+const HH_B: [number, number] = [12, 38];
+const HH_RUNNER = -26;
+const HH_BLOCKS: [number, number][] = [
+  [10, 6.5],
+  [11, 34.5],
+];
+/** Where a block is on the screen at a moment of the hold. */
+const hhBlock = (x0: number, ht: number) => -42 + mod(x0 + 42 - 34 * Math.max(0, ht), 84);
+const gamesTall: Scene = {
+  id: "games",
+  label: "Games",
+  caption: "games, played and made",
+  draw(o, w, h) {
+    o.save();
+    fit(o, w, h, 124, 206, 0.95);
+    // the body and the screen in outline, so the controls (solid) stand out
+    part(o, 0);
+    o.lineWidth = 2.6;
+    o.beginPath();
+    o.roundRect(-56, -99, 112, 198, [12, 12, 30, 12]);
+    o.stroke();
+    o.lineWidth = 1.6;
+    o.beginPath();
+    o.roundRect(-46, -88, 92, 78, 5);
+    o.stroke();
+    // speaker slots
+    o.lineWidth = 2;
+    o.lineCap = "round";
+    for (const d of [0, 7, 14]) {
+      o.beginPath();
+      o.moveTo(20 + d, 88 - d * 0.2);
+      o.lineTo(32 + d, 76 - d * 0.2);
+      o.stroke();
+    }
+    // inside the screen: the ground, the runner and two blocks
+    o.fillRect(-41, -24, 82, 1.8);
+    part(o, 9);
+    o.beginPath();
+    o.roundRect(HH_RUNNER - 4, -36, 8, 11, 2);
+    o.fill();
+    HH_BLOCKS.forEach(([id, x]) => {
+      part(o, id);
+      o.fillRect(x - 3, id === 10 ? -31 : -33, 6, id === 10 ? 7 : 9);
+    });
+    // the controls
+    part(o, 5);
+    o.fillRect(-40, 25, 28, 10);
+    o.fillRect(-31, 16, 10, 28);
+    part(o, 1);
+    o.beginPath();
+    o.arc(HH_A[0], HH_A[1], 7.5, 0, Math.PI * 2);
+    o.fill();
+    part(o, 2);
+    o.beginPath();
+    o.arc(HH_B[0], HH_B[1], 7.5, 0, Math.PI * 2);
+    o.fill();
+    part(o, 3);
+    o.beginPath();
+    o.roundRect(-19.5, 64.5, 15, 4, 2);
+    o.fill();
+    part(o, 4);
+    o.beginPath();
+    o.roundRect(4.5, 64.5, 15, 4, 2);
+    o.fill();
+    o.restore();
+  },
+  move(out, u, v, p, _i, ht) {
+    out.x = u;
+    out.y = v;
+    // each block's distance ahead of the runner: the jump runs from 14
+    // ahead to 8 past, and the A button goes down as it starts
+    let jump = 0;
+    let a = 0;
+    for (const [, x0] of HH_BLOCKS) {
+      const d = hhBlock(x0, ht) - HH_RUNNER;
+      if (d < 14 && d > -8) jump = Math.max(jump, Math.sin((Math.PI * (14 - d)) / 22));
+      a = Math.max(a, bump(d, 12, 2.6));
+    }
+    if (ht < 0) {
+      jump = 0;
+      a = 0;
+    }
+    if (p === 9) {
+      const bob = jump > 0 ? 0 : 0.8 * Math.abs(Math.sin(ht * 14));
+      out.y = v - 15 * jump - bob;
+    } else if (p === 10 || p === 11) {
+      const x0 = HH_BLOCKS[p - 10][1];
+      out.x = u - x0 + hhBlock(x0, ht);
+    } else if (p === 1 || p === 2) {
+      const [bx, by] = p === 1 ? HH_A : HH_B;
+      const k = p === 1 ? a : press(mod(ht, 1.7), 0.9);
+      out.x = bx + (u - bx) * (1 - 0.35 * k);
+      out.y = by + (v - by) * (1 - 0.35 * k) + 0.6 * k;
+    } else if (p === 4) {
+      out.y = v + 0.8 * press(ht, 0.05);
+    } else if (p === 5) {
+      // tapping right along with the run
+      const k = press(mod(ht, 0.9), 0.15) * smooth(0.2, 0.4, ht);
+      if (u > -26 + 2.5) out.x = u - 1.6 * k;
+    }
+  },
+};
+
 const games: Scene = {
   id: "games",
   label: "Games",
   caption: "games, played and made",
   place: "left",
+  tall: gamesTall,
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 136, 70);
@@ -543,6 +792,164 @@ const dj: Scene = {
   },
 };
 
+// Drums for tall screens: the kit from above, on its rug, the throne at the
+// bottom. Heads flex as they're hit, cymbals rock, and the sticks swing
+// between them. parts: 0 rug and throne, 1 kick, 2–3 rack toms, 4 snare,
+// 5 floor tom, 6 hi-hat, 7 crash, 8 ride, 9 left stick, 10 right stick
+const DT_HEADS: { id: number; x: number; y: number; r: number }[] = [
+  { id: 2, x: -15, y: -30, r: 13 },
+  { id: 3, x: 15, y: -30, r: 13 },
+  { id: 4, x: -30, y: 34, r: 14 },
+  { id: 5, x: 36, y: 28, r: 19 },
+];
+const DT_CYMBALS: { id: number; x: number; y: number; r: number }[] = [
+  { id: 6, x: -52, y: 2, r: 16 },
+  { id: 7, x: -38, y: -66, r: 25 },
+  { id: 8, x: 40, y: -62, r: 27 },
+];
+const DT_HAND_L: [number, number] = [-12, 60];
+const DT_HAND_R: [number, number] = [12, 58];
+const DT_TIP_L: [number, number] = [-30, 34];
+const DT_TIP_R: [number, number] = [-48, 4];
+/** Swing a stick about its hand from aiming at `from` to aiming at `to`
+ *  (by w, 0–1), shortened as its tip lifts off the head. */
+function aim(
+  out: { x: number; y: number },
+  u: number,
+  v: number,
+  hand: [number, number],
+  from: [number, number],
+  to: [number, number],
+  w: number,
+  lift: number,
+) {
+  const a0 = Math.atan2(from[1] - hand[1], from[0] - hand[0]);
+  const a1 = Math.atan2(to[1] - hand[1], to[0] - hand[0]);
+  const l0 = Math.hypot(from[0] - hand[0], from[1] - hand[1]);
+  const l1 = Math.hypot(to[0] - hand[0], to[1] - hand[1]);
+  const k = (1 + w * (l1 / l0 - 1)) * (1 - 0.2 * lift);
+  turn(out, hand[0] + (u - hand[0]) * k, hand[1] + (v - hand[1]) * k, hand[0], hand[1], w * (a1 - a0));
+}
+const drumsTall: Scene = {
+  id: "drums",
+  label: "Drums",
+  caption: "drums, loudly",
+  draw(o, w, h) {
+    o.save();
+    fit(o, w, h, 144, 192, 0.95);
+    o.lineCap = "round";
+    part(o, 0);
+    o.lineWidth = 1.6;
+    o.beginPath();
+    o.roundRect(-70, -94, 140, 182, 10);
+    o.stroke();
+    o.beginPath();
+    o.arc(0, 74, 10, 0, Math.PI * 2);
+    o.fill();
+    // the kick from above: a shell with a hoop at each end
+    part(o, 1);
+    o.beginPath();
+    o.roundRect(-13, -14, 26, 42, 3);
+    o.fill();
+    o.globalCompositeOperation = "destination-out";
+    o.fillRect(-13, -10, 26, 1.4);
+    o.fillRect(-13, 23, 26, 1.4);
+    o.globalCompositeOperation = "source-over";
+    // drum heads, each with its hoop cut in
+    for (const d of DT_HEADS) {
+      o.globalCompositeOperation = "destination-out";
+      o.beginPath();
+      o.arc(d.x, d.y, d.r + 1.8, 0, Math.PI * 2);
+      o.fill();
+      o.globalCompositeOperation = "source-over";
+      part(o, d.id);
+      o.beginPath();
+      o.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      o.fill();
+      o.globalCompositeOperation = "destination-out";
+      o.lineWidth = 1.2;
+      o.beginPath();
+      o.arc(d.x, d.y, d.r - 2.6, 0, Math.PI * 2);
+      o.stroke();
+      o.globalCompositeOperation = "source-over";
+    }
+    // cymbals: rings with a bell, lighter than the drums
+    for (const c of DT_CYMBALS) {
+      o.globalCompositeOperation = "destination-out";
+      o.beginPath();
+      o.arc(c.x, c.y, c.r + 1.5, 0, Math.PI * 2);
+      o.fill();
+      o.globalCompositeOperation = "source-over";
+      part(o, c.id);
+      o.lineWidth = 2.4;
+      o.beginPath();
+      o.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      o.stroke();
+      o.lineWidth = 0.9;
+      o.beginPath();
+      o.arc(c.x, c.y, c.r * 0.62, 0, Math.PI * 2);
+      o.stroke();
+      o.beginPath();
+      o.arc(c.x, c.y, 4, 0, Math.PI * 2);
+      o.fill();
+    }
+    // the sticks, from the hands to the snare and the hi-hat
+    o.lineWidth = 2.6;
+    for (const [id, hand, tip] of [
+      [9, DT_HAND_L, DT_TIP_L],
+      [10, DT_HAND_R, DT_TIP_R],
+    ] as const) {
+      part(o, id);
+      o.beginPath();
+      o.moveTo(hand[0], hand[1]);
+      o.lineTo(tip[0], tip[1]);
+      o.stroke();
+      o.beginPath();
+      o.arc(tip[0], tip[1], 2.3, 0, Math.PI * 2);
+      o.fill();
+    }
+    o.restore();
+  },
+  move(out, u, v, p, _i, ht) {
+    // the same 110 bpm groove as the kit seen front on
+    const beat = Math.max(0, ht) * (110 / 60);
+    const hat = mod(beat * 2, 1);
+    const snr = mod(beat - 1, 2) / 2;
+    const kick = Math.min(1, Math.exp(-mod(beat, 2) * 6) + Math.exp(-mod(beat - 2.5, 4) * 8));
+    const crash = Math.exp(-mod(beat, 4) * 1.1);
+    const bar8 = mod(beat, 8);
+    out.x = u;
+    out.y = v;
+    const flex = (cx: number, cy: number, k: number) => {
+      out.x = cx + (u - cx) * k;
+      out.y = cy + (v - cy) * k;
+    };
+    if (p === 1) flex(0, 7, 1 + 0.05 * kick);
+    else if (p === 4) flex(-30, 34, 1 + 0.08 * Math.exp(-snr * 14));
+    else if (p === 2 || p === 3) {
+      const fill = Math.exp(-mod(beat - (p === 2 ? 7 : 7.5), 8) * 7);
+      flex(p === 2 ? -15 : 15, -30, 1 + 0.1 * fill);
+    } else if (p === 5) flex(36, 28, 1 + 0.06 * Math.exp(-mod(beat - 3.5, 4) * 8));
+    else if (p === 6) flex(-52, 2, 1 - 0.06 * Math.exp(-hat * 6));
+    else if (p === 7 || p === 8) {
+      // a cymbal rocks on its stand: from above it squashes one way, then the other
+      const c = DT_CYMBALS[p - 6];
+      const amt = p === 7 ? 0.1 * crash * Math.sin(ht * 17) : 0.035 * Math.exp(-mod(beat, 1) * 5) * Math.sin(ht * 21);
+      out.x = c.x + (u - c.x) * (1 + amt);
+      out.y = c.y + (v - c.y) * (1 - amt);
+    } else if (p === 9) {
+      // left hand: snare backbeat, over to the toms for the fill
+      const w = smooth(6.75, 6.95, bar8) * (1 - smooth(7.75, 7.95, bar8));
+      aim(out, u, v, DT_HAND_L, DT_TIP_L, [-15, -30], w, Math.sin(Math.PI * snr) ** 0.6);
+    } else if (p === 10) {
+      // right hand: hi-hat eighths, out to the crash at the top of each bar
+      const b4 = mod(beat + 0.3, 4);
+      const w = smooth(0, 0.22, b4) * (1 - smooth(0.42, 0.7, b4));
+      aim(out, u, v, DT_HAND_R, DT_TIP_R, [-38, -60], w, Math.sin(Math.PI * hat) ** 0.7);
+    }
+  },
+};
+
 // A drum kit, front on. parts: 0 stands and legs, 1 bass drum, 2–3 rack
 // toms, 4 snare, 5 floor tom, 6 top hi-hat, 7 crash, 8 left stick (snare),
 // 9 right stick (hi-hat), 10 bottom hi-hat
@@ -553,6 +960,7 @@ const drums: Scene = {
   label: "Drums",
   caption: "drums, loudly",
   place: "side",
+  tall: drumsTall,
   draw(o, w, h) {
     o.save();
     fit(o, w, h, 190, 128, 0.94);
@@ -1272,6 +1680,8 @@ export function MorphField({ go }: { go: boolean }) {
       rot: boolean;
       meta: Meta;
       b: Box;
+      /** the drawing actually used: the scene, or its tall version */
+      sc: Scene;
     };
     let targets: (Target | null)[] = [];
     // where each point is asked to be this frame, and last frame: a jump
@@ -1375,7 +1785,9 @@ export function MorphField({ go }: { go: boolean }) {
       const nameY = nm ? nm.top + nm.height * 0.5 - cr.top : h;
       targets = list.map((sc) => {
         const b = boxes[sc.place ?? "side"];
-        const s0 = sample(sc, n, b.w, b.h, portrait);
+        // a side-on picture has a tall drawing of its own for tall boxes
+        const use = sc.tall && b.h > b.w * 0.8 ? sc.tall : sc;
+        const s0 = sample(use, n, b.w, b.h, portrait);
         if (!s0) return null;
         const meta: Meta = { cx: 0, cy: 0, rx: 1, ry: 1, yaw: 0, pitch: 0 };
         if (sc.image) {
@@ -1399,7 +1811,7 @@ export function MorphField({ go }: { go: boolean }) {
           s0.tx[i] += b.x;
           s0.ty[i] += b.y;
         }
-        return { ...s0, meta, b };
+        return { ...s0, meta, b, sc: use };
       });
       freshGoals = true;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1495,7 +1907,7 @@ export function MorphField({ go }: { go: boolean }) {
 
       // the held picture plays: each scene moves its own parts. It starts
       // just before the picture fully lands, so the motion grows out of it
-      const sc = list[sceneIdx];
+      const sc = tgt ? tgt.sc : list[sceneIdx];
       const live = tgt && sc.move && !reduce ? smooth(FORM * 0.75, FORM * 1.05, el) : 0;
       const ht = (el - FORM * 0.8) / 1000;
       if (tgt) {
