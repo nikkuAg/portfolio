@@ -8,7 +8,8 @@ import s from "./morph.module.css";
 // games, DJing, drums, board games, code), hold it, let go and drift into
 // the next; the rest never settle and keep the whole screen inked. While a
 // picture holds it plays: the face looks round, the car launches, the pad
-// is played, the decks are mixed, the drums are played, the dice are thrown, the code types itself.
+// is played, the decks are mixed, a backgammon opening is played, the code
+// types itself, the drums are played.
 // The pictures never follow the pointer. Moving it through the ink sweeps
 // the dots it crosses along with it, harder the faster it moves; they glow
 // lime, then drift back into place.
@@ -669,59 +670,57 @@ const drums: Scene = {
   },
 };
 
-// Board games: a chessboard in perspective and a short game on it. A pawn
-// pushes, the knight jumps twice, and the king topples: mate. parts: 0 the
-// board, 1 king, 2 knight, 3 pawn that moves, 4 pawn that stays
-/** A point on the board's grid lines (file 0–8 left to right, rank 0–8 near to far). */
-function boardAt(f: number, r: number): [number, number, number] {
-  const z = r / 8;
-  const hw = 96 - z * 34;
-  return [-hw + (f / 8) * 2 * hw, 46 - z * 50, 1 - z * 0.34];
+// Board games: a backgammon board from above, set up for the start, and an
+// opening played on it. Two dice tumble in and land on 3 and 1, and white
+// makes its 5-point: one checker from the 8-point, one from the 6, each
+// hopping across. Then the dice are shaken and thrown again. White checkers
+// are solid discs, black ones rings, the points thin outlines. parts: 0 board and the checkers that
+// stay, 1–2 the dice, 3–4 the two checkers that move
+const BG_PW = 94 / 6; // a point's width: six to a quarter, 94 units wide
+const BG_R = 6.3; // checker radius
+/** Where checker k (0 at the rim) sits on point i (0–23 as in play: 0 is
+ *  the bottom right, round to 23 at the top right). */
+function bgSpot(i: number, k: number): [number, number] {
+  const bottom = i < 12;
+  const j = bottom ? i : i - 12;
+  const x = bottom
+    ? j < 6
+      ? 101 - BG_PW * (j + 0.5)
+      : -7 - BG_PW * (j - 6 + 0.5)
+    : j < 6
+      ? -101 + BG_PW * (j + 0.5)
+      : 7 + BG_PW * (j - 6 + 0.5);
+  const y = bottom ? 66 - BG_R - 0.6 - k * (2 * BG_R + 0.4) : -66 + BG_R + 0.6 + k * (2 * BG_R + 0.4);
+  return [x, y];
 }
-/** The middle of a square, and how big a piece stands there. */
-const square = (f: number, r: number) => boardAt(f + 0.5, r + 0.5);
-type Piece = "king" | "knight" | "pawn";
-function piecePath(o: CanvasRenderingContext2D, kind: Piece) {
-  o.beginPath();
-  o.roundRect(-8, -4, 16, 4, 1.5);
-  if (kind === "pawn") {
-    o.moveTo(-5.5, -4);
-    o.quadraticCurveTo(-2, -10, -2.6, -14);
-    o.lineTo(2.6, -14);
-    o.quadraticCurveTo(2, -10, 5.5, -4);
-    o.rect(-4.4, -16, 8.8, 2.2);
-    o.moveTo(4.4, -20.4);
-    o.arc(0, -20.4, 4.4, 0, Math.PI * 2);
-  } else if (kind === "king") {
-    o.moveTo(-6.5, -4);
-    o.quadraticCurveTo(-2.5, -16, -4.5, -27);
-    o.lineTo(4.5, -27);
-    o.quadraticCurveTo(2.5, -16, 6.5, -4);
-    o.rect(-5.8, -29.5, 11.6, 2.6);
-    o.moveTo(-5, -29.5);
-    o.lineTo(-6, -33.5);
-    o.quadraticCurveTo(0, -36.5, 6, -33.5);
-    o.lineTo(5, -29.5);
-    o.rect(-1.2, -42, 2.4, 8.5);
-    o.rect(-3.8, -39.6, 7.6, 2.4);
-  } else {
-    o.moveTo(-6.5, -4);
-    o.lineTo(-5.5, -12);
-    o.quadraticCurveTo(-7.5, -21, -3, -28);
-    o.lineTo(-1, -32);
-    o.lineTo(1, -28);
-    o.quadraticCurveTo(6.5, -26.5, 9.5, -19.5);
-    o.lineTo(8.5, -16);
-    o.quadraticCurveTo(5, -16, 2, -17.5);
-    o.quadraticCurveTo(3, -11, 6.5, -4);
-  }
-}
-const PIECES: { id: number; kind: Piece; at: [number, number]; size: number }[] = [
-  { id: 1, kind: "king", at: [4, 6], size: 1.25 },
-  { id: 2, kind: "knight", at: [6, 0], size: 1.25 },
-  { id: 3, kind: "pawn", at: [3, 1], size: 1.25 },
-  { id: 4, kind: "pawn", at: [2, 1], size: 1.25 },
+// the starting position: [point, count, white]
+const BG_START: [number, number, boolean][] = [
+  [23, 2, true],
+  [12, 5, true],
+  [7, 3, true],
+  [5, 5, true],
+  [0, 2, false],
+  [11, 5, false],
+  [16, 3, false],
+  [18, 5, false],
 ];
+// the opening 3-1: 8/5 then 6/5. From the top of each stack to the 5-point
+const BG_MOVES: { id: number; from: [number, number]; to: [number, number]; at: number }[] = [
+  { id: 3, from: [7, 2], to: [4, 0], at: 1.15 },
+  { id: 4, from: [5, 4], to: [4, 1], at: 1.95 },
+];
+const BG_DICE: { id: number; at: [number, number]; pips: number }[] = [
+  { id: 1, at: [40, 0], pips: 3 },
+  { id: 2, at: [60, 0], pips: 1 },
+];
+const PIPS: Record<number, [number, number][]> = {
+  1: [[0, 0]],
+  3: [
+    [-3.4, -3.4],
+    [0, 0],
+    [3.4, 3.4],
+  ],
+};
 const board: Scene = {
   id: "board",
   label: "Board games",
@@ -729,81 +728,114 @@ const board: Scene = {
   place: "left",
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 204, 112, 0.95);
-    o.translate(0, 8);
-    // the dark squares, and the board's front edge
+    fit(o, w, h, 220, 146, 0.95);
+    o.lineJoin = "round";
     part(o, 0);
-    for (let r = 0; r < 8; r++) {
-      for (let f = 0; f < 8; f++) {
-        if ((f + r) % 2) continue;
-        const c = [boardAt(f, r), boardAt(f + 1, r), boardAt(f + 1, r + 1), boardAt(f, r + 1)];
-        o.beginPath();
-        o.moveTo(c[0][0], c[0][1]);
-        for (const [x, y] of c.slice(1)) o.lineTo(x, y);
-        o.closePath();
-        o.fill();
-      }
-    }
-    o.lineWidth = 1.2;
+    // the frame and the bar down the middle
+    o.lineWidth = 2.4;
     o.beginPath();
-    const corners = [boardAt(0, 0), boardAt(8, 0), boardAt(8, 8), boardAt(0, 8)];
-    o.moveTo(corners[0][0], corners[0][1]);
-    for (const [x, y] of corners.slice(1)) o.lineTo(x, y);
-    o.closePath();
+    o.roundRect(-106, -70, 212, 140, 5);
     o.stroke();
-    o.fillRect(corners[0][0], corners[0][1] + 1, corners[1][0] - corners[0][0], 4);
-    // the pieces, back to front, each with a clear gap round it
-    for (const pc of [...PIECES].sort((a, b) => b.at[1] - a.at[1])) {
-      const [x, y, s] = square(...pc.at);
-      o.save();
-      o.translate(x, y);
-      o.scale(s * pc.size, s * pc.size);
-      o.globalCompositeOperation = "destination-out";
-      o.lineWidth = 3.5;
-      o.lineJoin = "round";
-      piecePath(o, pc.kind);
+    o.lineWidth = 1.4;
+    for (const x of [-5, 5]) {
+      o.beginPath();
+      o.moveTo(x, -68);
+      o.lineTo(x, 68);
       o.stroke();
+    }
+    // the points: long thin outlines, so the checkers get most of the ink
+    o.lineWidth = 1;
+    for (let i = 0; i < 24; i++) {
+      const [cx] = bgSpot(i, 0);
+      const bottom = i < 12;
+      const base = bottom ? 66 : -66;
+      const tip = bottom ? 12 : -12;
+      o.beginPath();
+      o.moveTo(cx - BG_PW / 2 + 1, base);
+      o.lineTo(cx, tip);
+      o.lineTo(cx + BG_PW / 2 - 1, base);
+      o.closePath();
+      o.stroke();
+    }
+    // a checker: a gap round it, then a disc (white) or a ring (black)
+    const checker = (x: number, y: number, white: boolean, id: number) => {
+      o.globalCompositeOperation = "destination-out";
+      o.beginPath();
+      o.arc(x, y, BG_R + 1.2, 0, Math.PI * 2);
       o.fill();
       o.globalCompositeOperation = "source-over";
-      part(o, pc.id);
-      piecePath(o, pc.kind);
+      part(o, id);
+      o.beginPath();
+      o.arc(x, y, BG_R, 0, Math.PI * 2);
       o.fill();
-      o.restore();
+      if (!white) {
+        o.globalCompositeOperation = "destination-out";
+        o.beginPath();
+        o.arc(x, y, BG_R - 2.6, 0, Math.PI * 2);
+        o.fill();
+        o.globalCompositeOperation = "source-over";
+      }
+    };
+    for (const [pt, count, white] of BG_START) {
+      for (let k = 0; k < count; k++) {
+        const mover = BG_MOVES.find((m) => m.from[0] === pt && m.from[1] === k);
+        const [x, y] = bgSpot(pt, k);
+        checker(x, y, white, mover ? mover.id : 0);
+      }
+    }
+    // the dice, with their pips cut out
+    for (const d of BG_DICE) {
+      const [x, y] = d.at;
+      part(o, d.id);
+      o.beginPath();
+      o.roundRect(x - 6.5, y - 6.5, 13, 13, 2.6);
+      o.fill();
+      o.globalCompositeOperation = "destination-out";
+      for (const [px, py] of PIPS[d.pips]) {
+        o.beginPath();
+        o.arc(x + px, y + py, 1.5, 0, Math.PI * 2);
+        o.fill();
+      }
+      o.globalCompositeOperation = "source-over";
     }
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
     out.x = u;
     out.y = v;
-    if (p < 1 || p > 4) return;
-    const pc = PIECES.find((q) => q.id === p)!;
-    const lv = v - 8;
-    const [x0, y0, s0] = square(...pc.at);
-    // where this piece stands now: [file, rank] blended along its moves
-    let f = pc.at[0];
-    let r = pc.at[1];
-    let hop = 0;
-    let fall = 0;
-    if (p === 3) {
-      r += 2 * smooth(0.5, 1.0, ht);
-    } else if (p === 2) {
-      const j1 = smooth(1.3, 1.95, ht);
-      const j2 = smooth(2.4, 3.05, ht);
-      f += -1 * j1 - 1 * j2;
-      r += 2 * j1 + 2 * j2;
-      hop = 16 * (Math.sin(Math.PI * j1) + Math.sin(Math.PI * j2));
-    } else if (p === 1) {
-      // check, a wobble, then it falls
-      const wob = 0.12 * Math.sin((ht - 3.2) * 30) * (smooth(3.2, 3.3, ht) - smooth(3.5, 3.6, ht));
-      const t = clamp((ht - 3.6) / 0.45, 0, 1);
-      fall = wob + 1.4 * t * t - 0.06 * bump(ht, 4.12, 0.05);
+    if (p === 1 || p === 2) {
+      // thrown in from the right, tumbling and bouncing, then still; shaken
+      // and thrown again near the end
+      const d = BG_DICE[p - 1];
+      const throwAt = (t0: number) => {
+        const s = clamp((ht - t0) / 0.85, 0, 1);
+        const e = easeOut(s);
+        const lag = p === 2 ? 0.08 : 0;
+        const bounce = Math.abs(Math.sin(s * Math.PI * 3)) * (1 - s) * 9;
+        return { dx: (1 - e) * (70 + lag * 200), dy: -bounce, a: (1 - e) * (p === 2 ? -7 : 8), live: ht >= t0 };
+      };
+      const second = ht >= 3.75;
+      const th = throwAt(second ? 3.75 : -0.15);
+      // the shake before the second throw: a rattle on the spot
+      const shake = smooth(3.15, 3.3, ht) * (1 - smooth(3.65, 3.75, ht));
+      const sx = shake * 3 * Math.sin(ht * 55 + p);
+      const sy = shake * 2.2 * Math.cos(ht * 47 + p * 2);
+      turn(out, u, v, d.at[0], d.at[1], th.a + shake * 0.5 * Math.sin(ht * 40 + p));
+      out.x += th.dx + sx;
+      out.y += th.dy + sy;
+      return;
     }
-    const [x1, y1, s1] = square(f, r);
-    const lx = (u - x0) / s0;
-    const ly = (lv - y0) / s0;
-    turn(out, lx, ly, 0, 0, fall);
-    out.x = x1 + out.x * s1;
-    out.y = y1 + out.y * s1 - hop + 8;
+    if (p === 3 || p === 4) {
+      const m = BG_MOVES[p - 3];
+      const s = smooth(m.at, m.at + 0.6, ht);
+      const [x0, y0] = bgSpot(...m.from);
+      const [x1, y1] = bgSpot(...m.to);
+      // lifted on the way: a hop, and a little bigger at the top of it
+      const lift = Math.sin(Math.PI * s);
+      const k = 1 + 0.22 * lift;
+      out.x = x0 + (x1 - x0) * s + (u - x0) * k;
+      out.y = y0 + (y1 - y0) * s + (v - y0) * k - lift * 16;
+    }
   },
 };
 
@@ -1628,7 +1660,12 @@ export function MorphField({ go }: { go: boolean }) {
     const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
     io.observe(canvas);
 
+    // once this effect is cleaned up (a remount, Strict Mode's double run in
+    // dev) a late image or font load must not start a second loop on the
+    // same canvas: two swarms would draw two pictures at once
+    let dead = false;
     const begin = () => {
+      if (dead) return;
       layout();
       setScenes(list);
       raf = requestAnimationFrame(frame);
@@ -1650,6 +1687,8 @@ export function MorphField({ go }: { go: boolean }) {
     hero.addEventListener("pointerup", onLeave);
     window.addEventListener("resize", onResize);
     return () => {
+      dead = true;
+      clearTimeout(tm);
       cancelAnimationFrame(raf);
       io.disconnect();
       hero.removeEventListener("pointermove", onMove as EventListener);
