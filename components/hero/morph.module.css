@@ -1,17 +1,29 @@
-/* The hero. One grid with the nav: the same side gutters (16 / 24 / 40px),
-   the name set large at the bottom left, the intro beside
-   it on the same baseline, and the ink picture up and to the right. */
+/* The hero, on one grid with the nav (gutters 16 / 24 / 40px, a frame that
+   stops growing at 2200px).
+
+   Landscape: two columns. The words are a column on the left: the list of
+   what's being drawn at the top, the name and the line about me at the
+   bottom. The picture's stage is everything to their right, from under the
+   nav down to the same baseline, so every picture lands in the same frame.
+
+   Portrait: the stage on top, the words stacked underneath.
+
+   The canvas measures where the words landed ([data-hero-words]) and builds
+   its stage from that, so the two can never disagree. */
 
 .hero {
-  --g: 16px; /* matches the nav's side padding at each breakpoint */
-  --foot: 24px; /* breathing room under the words */
+  --g: 16px;
+  --nav: 72px;
+  --foot: 24px;
+  --fl: max(var(--g), (100% - 2200px) / 2);
+  --col: 100%;
   --lime: #c8ff3d;
   --ink: #f2f1ec;
   --muted: #8a887f;
   position: relative;
   height: 100svh;
   min-height: 34rem;
-  overflow: hidden;
+  overflow: clip;
   background: #0b0c10;
   isolation: isolate;
 }
@@ -39,18 +51,18 @@
   touch-action: pan-y;
 }
 
-/* ── name and intro ── */
+/* ── the words ── */
 .content {
   position: absolute;
   z-index: 3;
-  /* on very wide screens the composition stays a 2200px frame in the middle */
-  left: max(var(--g), (100% - 2200px) / 2);
-  right: max(var(--g), (100% - 2200px) / 2);
-  bottom: calc(var(--foot) + 1.75rem);
+  left: var(--fl);
+  right: var(--fl);
+  bottom: var(--foot);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) clamp(18rem, 25vw, 34rem);
-  align-items: end;
-  gap: 2rem 3rem;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: end;
+  gap: 1rem;
+  container: words / inline-size;
   pointer-events: none;
 }
 .content > * {
@@ -62,11 +74,17 @@
   font-family: var(--font-ident), var(--font-geist-sans), sans-serif;
   font-stretch: 125%;
   font-weight: 800;
-  /* width-led, but short screens hold it back too */
-  font-size: clamp(3rem, min(8.2vw, 16.5vh), 11rem);
+  /* "Divyansh" is about 5.6em wide at this stretch: 17cqi fills the column.
+     Short screens hold it back so the picture keeps its room */
+  font-size: clamp(2.6rem, min(14vw, 9.5svh), 6.5rem);
   line-height: 0.9;
   letter-spacing: -0.02em;
   color: var(--ink);
+}
+@supports (font-size: 1cqi) {
+  .name {
+    font-size: clamp(2.6rem, min(17cqi, 9.5svh), 6.5rem);
+  }
 }
 .line {
   display: block;
@@ -81,13 +99,13 @@
 
 .side {
   position: relative;
-  padding-bottom: 0.4rem;
+  max-width: 36rem;
 }
 /* a soft pool of dark under the small text, so drifting ink never fights it */
 .side::before {
   content: "";
   position: absolute;
-  inset: -40% -20% -30% -25%;
+  inset: -30% -10%;
   z-index: -1;
   background: radial-gradient(closest-side, rgb(11 12 16 / 0.9), rgb(11 12 16 / 0));
   pointer-events: none;
@@ -96,83 +114,124 @@
 .lede {
   margin: 0;
   max-width: 34ch;
-  font-size: clamp(1rem, 0.72rem + 0.42vw, 1.35rem);
+  font-size: clamp(1rem, 0.86rem + 0.3vw, 1.25rem);
   line-height: 1.55;
+  text-wrap: pretty;
   color: #b9b8b0;
 }
 
-/* the pause control: out of sight until someone tabs to it */
-.pause {
-  position: absolute;
-  z-index: 4;
-  right: var(--g);
-  bottom: var(--foot);
-  height: 2.5rem;
-  padding: 0 1rem;
-  border-radius: 999px;
-  border: 1px solid rgb(242 241 236 / 0.3);
-  background: #0b0c10;
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.85rem;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(6px);
-  transition:
-    opacity 160ms ease,
-    transform 160ms ease;
+/* ── what's being drawn: a quiet list at the head of the words' column ──
+   Only on landscape screens tall enough to give it room. */
+.index {
+  display: none;
 }
-.pause:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: none;
+
+/* ── landscape: words in a column, the stage to their right ── */
+@media (min-width: 1024px) and (min-aspect-ratio: 1/1), (min-aspect-ratio: 23/20) {
+  .hero {
+    --col: 0.44;
+  }
+  .content {
+    top: var(--nav);
+    right: auto;
+    width: calc((100% - 2 * var(--fl)) * var(--col));
+    gap: 1.25rem;
+  }
+  .name {
+    font-size: clamp(2.4rem, min(8vw, 16svh), 10rem);
+  }
+  @supports (font-size: 1cqi) {
+    .name {
+      font-size: clamp(2.4rem, min(17cqi, 16svh), 10rem);
+    }
+  }
+}
+@media (min-width: 1024px) and (min-aspect-ratio: 1/1) and (min-height: 620px) {
+  .index {
+    position: absolute;
+    z-index: 3;
+    left: var(--fl);
+    top: calc(var(--nav) + clamp(1.5rem, 5svh, 4rem));
+    display: grid;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+.index button {
+  position: relative;
+  display: block;
+  padding: 0.3rem 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: clamp(0.95rem, 0.8rem + 0.25vw, 1.15rem);
+  line-height: 1.3;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: left;
+  transition: color 200ms ease;
+}
+.index button:hover {
+  color: var(--ink);
+}
+.index button:focus-visible {
   outline: 2px solid var(--lime);
   outline-offset: 3px;
+  border-radius: 2px;
+}
+.index button[aria-current="true"] {
+  color: var(--ink);
+}
+/* the current one carries a thin lime line that fills while it's drawn */
+.index button[aria-current="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--lime);
+  transform-origin: left;
+  animation: fill var(--cycle, 7400ms) linear both;
+}
+.index[data-paused] button::after {
+  animation-play-state: paused;
+}
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .index button[aria-current="true"]::after {
+    animation: none;
+  }
 }
 
-/* ── the entrance: one orchestrated moment once the loader is gone ──
-   Only hidden when scripts run, so the text is always there without JS. */
-@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
-  .line > span {
-    transform: translateY(108%);
-    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+/* phones held sideways: the column is half the screen, and short */
+@media (max-height: 520px) and (orientation: landscape) {
+  .hero {
+    --nav: 60px;
+    --foot: 16px;
+    --col: 0.5;
+    min-height: 0;
   }
-  .line:nth-child(2) > span {
-    transition-delay: 90ms;
+  .content {
+    gap: 0.6rem;
   }
   .lede {
-    opacity: 0;
-    transform: translateY(14px);
-    transition:
-      opacity 700ms ease,
-      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
-    transition-delay: 380ms;
-  }
-  .hero[data-ready] .line > span,
-  .hero[data-ready] .lede {
-    opacity: 1;
-    transform: none;
+    font-size: 0.86rem;
+    max-width: 38ch;
   }
 }
-
-/* ── tablet, phone and any tall screen: picture on top, words underneath ── */
-@media (max-width: 1023px), (max-aspect-ratio: 1/1) {
-  .content {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1rem;
-    bottom: calc(var(--foot) + 1.25rem);
-  }
-  /* the name is the one big thing here too: as wide as the screen allows,
-     held back on short screens so the picture keeps its room */
-  .name {
-    font-size: clamp(2.6rem, min(14vw, 9.5vh), 8rem);
-  }
-  .side {
-    max-width: 36rem;
-  }
-  .side::before {
-    inset: -30% -10% -30% -10%;
+@media (max-width: 1023px) and (min-aspect-ratio: 23/20) {
+  .hero {
+    --col: 0.5;
   }
 }
 
@@ -185,36 +244,64 @@
   }
 }
 
-/* phones held sideways: words on the left half, the picture on the right */
-@media (max-height: 520px) and (orientation: landscape) {
-  .hero {
-    min-height: 0;
-  }
-  .content {
-    right: 50%;
-    bottom: 18px;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.6rem;
-  }
-  .name {
-    font-size: clamp(1.8rem, min(7vw, 15vh), 3.8rem);
-  }
-  .lede {
-    font-size: 0.86rem;
-    max-width: 38ch;
+/* the pause control: in the corner, quiet until hovered or focused */
+.pause {
+  position: absolute;
+  z-index: 4;
+  right: var(--fl);
+  bottom: var(--foot);
+  height: 2.25rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgb(242 241 236 / 0.18);
+  background: rgb(11 12 16 / 0.6);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    border-color 160ms ease;
+}
+.pause:hover {
+  color: var(--ink);
+  border-color: rgb(242 241 236 / 0.4);
+}
+.pause:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+/* stacked, the words run the full width, so there it sits up under the nav */
+@media (max-width: 1023px) and (max-aspect-ratio: 23/20), (max-aspect-ratio: 1/1) {
+  .pause {
+    bottom: auto;
+    top: calc(var(--nav) - 4px);
   }
 }
 
-/* landscape between phone and desktop (a small laptop, a tablet held wide):
-   the words on the left half, the picture filling the right half */
-@media (min-width: 768px) and (max-width: 1023px) and (min-aspect-ratio: 23/20) and (min-height: 521px) {
-  .content {
-    right: 50%;
+/* ── the entrance: one orchestrated moment once the loader is gone ──
+   Only hidden when scripts run, so the text is always there without JS. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .line > span {
+    transform: translateY(108%);
+    transition: transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .name {
-    font-size: clamp(2.6rem, min(6.4vw, 11vh), 4.6rem);
+  .line:nth-child(2) > span {
+    transition-delay: 90ms;
   }
-  .side {
-    max-width: none;
+  .lede,
+  .index {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 700ms ease,
+      transform 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: 380ms;
+  }
+  .hero[data-ready] .line > span,
+  .hero[data-ready] .lede,
+  .hero[data-ready] .index {
+    opacity: 1;
+    transform: none;
   }
 }

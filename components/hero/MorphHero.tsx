@@ -38,7 +38,7 @@ export function MorphHero() {
       <div className={s.stage}>
         <MorphField go={go} />
       </div>
-      <div className={s.content}>
+      <div className={s.content} data-hero-words>
         <h1 className={s.name} data-hero-name>
           <span className={s.line}>
             <span>Divyansh</span>

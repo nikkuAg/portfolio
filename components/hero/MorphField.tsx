@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import s from "./morph.module.css";
 
 // The hero's picture: one swarm of ink threads that keeps drawing who I am.
@@ -8,7 +8,7 @@ import s from "./morph.module.css";
 // games, DJing, drums, board games, code), hold it, let go and drift into
 // the next; the rest never settle and keep the whole screen inked. While a
 // picture holds it plays: the face looks round, the car launches, the pad
-// is played, the decks are mixed, a backgammon opening is played, the code
+// is played, the decks are mixed, a game of Connect Four is won, the code
 // types itself, the drums are played.
 // The pictures never follow the pointer. Moving it through the ink sweeps
 // the dots it crosses along with it, harder the faster it moves; they glow
@@ -23,8 +23,6 @@ type Scene = {
   caption: string;
   draw: (o: CanvasRenderingContext2D, w: number, h: number) => void;
   image?: boolean;
-  /** where on the page it goes, on screens wide enough to choose */
-  place?: "side" | "band" | "left";
   /** seen from above, so on a tall screen it may be turned a quarter to
    *  fill the space */
   turn?: boolean;
@@ -91,8 +89,10 @@ function part(o: CanvasRenderingContext2D, id: number) {
 let fitK = 1;
 let fitDX = 0;
 let fitDY = 0;
+let fitArea = 0;
 function fit(o: CanvasRenderingContext2D, w: number, h: number, uw: number, uh: number, fill = 0.9) {
   const k = Math.min(w / uw, h / uh) * fill;
+  fitArea = k * uw * k * uh;
   fitK = k;
   fitDX = 0;
   fitDY = 0;
@@ -113,7 +113,6 @@ const face: Scene = {
   id: "face",
   label: "Me",
   caption: "my face",
-  place: "side",
   image: true,
   draw() {},
   move(out, u, v, _p, _i, ht, m) {
@@ -280,7 +279,6 @@ const f1: Scene = {
   id: "f1",
   label: "F1",
   caption: "F1, and Ferrari",
-  place: "band",
   tall: f1Tall,
   draw(o, w, h) {
     o.save();
@@ -562,7 +560,6 @@ const games: Scene = {
   id: "games",
   label: "Games",
   caption: "games, played and made",
-  place: "left",
   tall: gamesTall,
   draw(o, w, h) {
     o.save();
@@ -659,9 +656,8 @@ const KNOB_Y = [-36, -27, -18];
 const METER_BASE = -10;
 const dj: Scene = {
   id: "dj",
-  label: "DJ",
+  label: "DJing",
   caption: "DJing, my newest habit",
-  place: "band",
   turn: true,
   draw(o, w, h) {
     o.save();
@@ -959,7 +955,6 @@ const drums: Scene = {
   id: "drums",
   label: "Drums",
   caption: "drums, loudly",
-  place: "side",
   tall: drumsTall,
   draw(o, w, h) {
     o.save();
@@ -1094,173 +1089,137 @@ const drums: Scene = {
   },
 };
 
-// Board games: a backgammon board from above, set up for the start, and an
-// opening played on it. Two dice tumble in and land on 3 and 1, and white
-// makes its 5-point: one checker from the 8-point, one from the 6, each
-// hopping across. Then the dice are shaken and thrown again. White checkers
-// are solid discs, black ones rings, the points thin outlines. parts: 0 board and the checkers that
-// stay, 1–2 the dice, 3–4 the two checkers that move
-const BG_PW = 94 / 6; // a point's width: six to a quarter, 94 units wide
-const BG_R = 6.3; // checker radius
-/** Where checker k (0 at the rim) sits on point i (0–23 as in play: 0 is
- *  the bottom right, round to 23 at the top right). */
-function bgSpot(i: number, k: number): [number, number] {
-  const bottom = i < 12;
-  const j = bottom ? i : i - 12;
-  const x = bottom
-    ? j < 6
-      ? 101 - BG_PW * (j + 0.5)
-      : -7 - BG_PW * (j - 6 + 0.5)
-    : j < 6
-      ? -101 + BG_PW * (j + 0.5)
-      : 7 + BG_PW * (j - 6 + 0.5);
-  const y = bottom ? 66 - BG_R - 0.6 - k * (2 * BG_R + 0.4) : -66 + BG_R + 0.6 + k * (2 * BG_R + 0.4);
-  return [x, y];
-}
-// the starting position: [point, count, white]
-const BG_START: [number, number, boolean][] = [
-  [23, 2, true],
-  [12, 5, true],
-  [7, 3, true],
-  [5, 5, true],
-  [0, 2, false],
-  [11, 5, false],
-  [16, 3, false],
-  [18, 5, false],
+// Board games: Connect Four, upright on its feet, a game near its end. Three
+// more discs are played: each appears above the board, slides to its column
+// and drops, bouncing as it lands. The last one makes four on a diagonal,
+// and the four pulse. Solid discs against rings. parts: 0 the frame, the
+// holes and the discs already played, 1–3 the discs played now, 4 the three
+// discs that the last one joins
+const C4_CELL = 16;
+const c4At = (col: number, row: number): [number, number] => [-48 + col * C4_CELL, 40 - row * C4_CELL];
+// [column, row from the bottom, solid]
+const C4_PLAYED: [number, number, boolean][] = [
+  [1, 0, true],
+  [1, 1, false],
+  [2, 0, false],
+  [2, 1, true],
+  [2, 2, false],
+  [3, 0, true],
+  [3, 1, false],
+  [3, 2, true],
+  [4, 0, false],
+  [4, 1, true],
+  [4, 2, false],
+  [5, 0, true],
+  [6, 0, false],
 ];
-// the opening 3-1: 8/5 then 6/5. From the top of each stack to the 5-point
-const BG_MOVES: { id: number; from: [number, number]; to: [number, number]; at: number }[] = [
-  { id: 3, from: [7, 2], to: [4, 0], at: 1.15 },
-  { id: 4, from: [5, 4], to: [4, 1], at: 1.95 },
+const C4_WIN: [number, number][] = [
+  [1, 0],
+  [2, 1],
+  [3, 2],
+  [4, 3],
 ];
-const BG_DICE: { id: number; at: [number, number]; pips: number }[] = [
-  { id: 1, at: [40, 0], pips: 3 },
-  { id: 2, at: [60, 0], pips: 1 },
+const C4_DROPS: { id: number; col: number; row: number; solid: boolean; at: number }[] = [
+  { id: 1, col: 0, row: 0, solid: true, at: 0.15 },
+  { id: 2, col: 5, row: 1, solid: false, at: 1.35 },
+  { id: 3, col: 4, row: 3, solid: true, at: 2.55 },
 ];
-const PIPS: Record<number, [number, number][]> = {
-  1: [[0, 0]],
-  3: [
-    [-3.4, -3.4],
-    [0, 0],
-    [3.4, 3.4],
-  ],
-};
+const C4_HOVER_Y = -64;
+const C4_R = 6.3;
 const board: Scene = {
   id: "board",
   label: "Board games",
   caption: "board games, the longer the better",
-  place: "left",
-  turn: true,
   draw(o, w, h) {
     o.save();
-    fit(o, w, h, 220, 146, 0.95);
+    fit(o, w, h, 144, 140, 0.95);
+    shift(o, 0, 4);
+    o.lineCap = "round";
     o.lineJoin = "round";
     part(o, 0);
-    // the frame and the bar down the middle
-    o.lineWidth = 2.4;
+    // the frame and its two feet
+    o.lineWidth = 2.6;
     o.beginPath();
-    o.roundRect(-106, -70, 212, 140, 5);
+    o.roundRect(-58, -50, 116, 100, 6);
     o.stroke();
-    o.lineWidth = 1.4;
-    for (const x of [-5, 5]) {
+    for (const s of [-1, 1]) {
       o.beginPath();
-      o.moveTo(x, -68);
-      o.lineTo(x, 68);
+      o.moveTo(s * 52, 50);
+      o.lineTo(s * 64, 62);
+      o.moveTo(s * 70, 62);
+      o.lineTo(s * 58, 62);
       o.stroke();
     }
-    // the points: long thin outlines, so the checkers get most of the ink
-    o.lineWidth = 1;
-    for (let i = 0; i < 24; i++) {
-      const [cx] = bgSpot(i, 0);
-      const bottom = i < 12;
-      const base = bottom ? 66 : -66;
-      const tip = bottom ? 12 : -12;
-      o.beginPath();
-      o.moveTo(cx - BG_PW / 2 + 1, base);
-      o.lineTo(cx, tip);
-      o.lineTo(cx + BG_PW / 2 - 1, base);
-      o.closePath();
-      o.stroke();
-    }
-    // a checker: a gap round it, then a disc (white) or a ring (black)
-    const checker = (x: number, y: number, white: boolean, id: number) => {
-      o.globalCompositeOperation = "destination-out";
-      o.beginPath();
-      o.arc(x, y, BG_R + 1.2, 0, Math.PI * 2);
-      o.fill();
-      o.globalCompositeOperation = "source-over";
-      part(o, id);
-      o.beginPath();
-      o.arc(x, y, BG_R, 0, Math.PI * 2);
-      o.fill();
-      if (!white) {
+    // the empty holes: thin rings
+    o.lineWidth = 0.9;
+    for (let col = 0; col < 7; col++)
+      for (let row = 0; row < 6; row++) {
+        const [x, y] = c4At(col, row);
+        o.beginPath();
+        o.arc(x, y, C4_R, 0, Math.PI * 2);
+        o.stroke();
+      }
+    const disc = (x: number, y: number, solid: boolean, id: number, erase = true) => {
+      if (erase) {
         o.globalCompositeOperation = "destination-out";
         o.beginPath();
-        o.arc(x, y, BG_R - 2.6, 0, Math.PI * 2);
+        o.arc(x, y, C4_R + 0.8, 0, Math.PI * 2);
         o.fill();
         o.globalCompositeOperation = "source-over";
       }
-    };
-    for (const [pt, count, white] of BG_START) {
-      for (let k = 0; k < count; k++) {
-        const mover = BG_MOVES.find((m) => m.from[0] === pt && m.from[1] === k);
-        const [x, y] = bgSpot(pt, k);
-        checker(x, y, white, mover ? mover.id : 0);
-      }
-    }
-    // the dice, with their pips cut out
-    for (const d of BG_DICE) {
-      const [x, y] = d.at;
-      part(o, d.id);
-      o.beginPath();
-      o.roundRect(x - 6.5, y - 6.5, 13, 13, 2.6);
-      o.fill();
-      o.globalCompositeOperation = "destination-out";
-      for (const [px, py] of PIPS[d.pips]) {
+      part(o, id);
+      if (solid) {
         o.beginPath();
-        o.arc(x + px, y + py, 1.5, 0, Math.PI * 2);
+        o.arc(x, y, C4_R, 0, Math.PI * 2);
         o.fill();
+      } else {
+        o.lineWidth = 2.6;
+        o.beginPath();
+        o.arc(x, y, C4_R - 1.3, 0, Math.PI * 2);
+        o.stroke();
       }
-      o.globalCompositeOperation = "source-over";
+    };
+    for (const [col, row, solid] of C4_PLAYED) {
+      const win = C4_WIN.some(([c, r]) => c === col && r === row);
+      disc(...c4At(col, row), solid, win ? 4 : 0);
     }
+    // the discs still to come are drawn where they land
+    for (const d of C4_DROPS) disc(...c4At(d.col, d.row), d.solid, d.id, false);
     o.restore();
   },
   move(out, u, v, p, _i, ht) {
     out.x = u;
     out.y = v;
-    if (p === 1 || p === 2) {
-      // thrown in from the right, tumbling and bouncing, then still; shaken
-      // and thrown again near the end
-      const d = BG_DICE[p - 1];
-      const throwAt = (t0: number) => {
-        const s = clamp((ht - t0) / 0.85, 0, 1);
-        const e = easeOut(s);
-        const lag = p === 2 ? 0.08 : 0;
-        const bounce = Math.abs(Math.sin(s * Math.PI * 3)) * (1 - s) * 9;
-        return { dx: (1 - e) * (70 + lag * 200), dy: -bounce, a: (1 - e) * (p === 2 ? -7 : 8), live: ht >= t0 };
-      };
-      const second = ht >= 3.75;
-      const th = throwAt(second ? 3.75 : -0.15);
-      // the shake before the second throw: a rattle on the spot
-      const shake = smooth(3.15, 3.3, ht) * (1 - smooth(3.65, 3.75, ht));
-      const sx = shake * 3 * Math.sin(ht * 55 + p);
-      const sy = shake * 2.2 * Math.cos(ht * 47 + p * 2);
-      turn(out, u, v, d.at[0], d.at[1], th.a + shake * 0.5 * Math.sin(ht * 40 + p));
-      out.x += th.dx + sx;
-      out.y += th.dy + sy;
+    // the four in a row pulse once the last disc lands
+    const won = ht - (C4_DROPS[2].at + 0.95);
+    const pulse = won > 0 ? 0.22 * Math.abs(Math.sin(won * 5.5)) * Math.exp(-won * 0.5) : 0;
+    if (p === 4) {
+      const [cx, cy] = c4At(...C4_WIN.find(([c, r]) => {
+        const [x, y] = c4At(c, r);
+        return Math.hypot(u - x, v - y) < C4_R + 1.5;
+      }) ?? C4_WIN[0]);
+      out.x = cx + (u - cx) * (1 + pulse);
+      out.y = cy + (v - cy) * (1 + pulse);
       return;
     }
-    if (p === 3 || p === 4) {
-      const m = BG_MOVES[p - 3];
-      const s = smooth(m.at, m.at + 0.6, ht);
-      const [x0, y0] = bgSpot(...m.from);
-      const [x1, y1] = bgSpot(...m.to);
-      // lifted on the way: a hop, and a little bigger at the top of it
-      const lift = Math.sin(Math.PI * s);
-      const k = 1 + 0.22 * lift;
-      out.x = x0 + (x1 - x0) * s + (u - x0) * k;
-      out.y = y0 + (y1 - y0) * s + (v - y0) * k - lift * 16;
-    }
+    if (p < 1 || p > 3) return;
+    const d = C4_DROPS[p - 1];
+    const [lx, ly] = c4At(d.col, d.row);
+    const t = ht - d.at;
+    // waiting: a small knot of ink above the middle of the board
+    // appear: it grows there; slide: across to its column; drop: falls,
+    // speeding up, and bounces once
+    const grow = smooth(0, 0.25, t);
+    const slide = smooth(0.25, 0.55, t);
+    const fall = clamp((t - 0.6) / 0.3, 0, 1);
+    const bounce = t > 0.9 ? 5 * Math.max(0, Math.sin(((t - 0.9) / 0.18) * Math.PI)) * (t < 1.08 ? 1 : 0) : 0;
+    const hx = lx * slide;
+    const cy = C4_HOVER_Y + (ly - C4_HOVER_Y) * fall * fall - bounce;
+    const k = 0.12 + 0.88 * grow;
+    let kk = k;
+    if (p === 3) kk *= 1 + pulse;
+    out.x = hx + (u - lx) * kk;
+    out.y = cy + (v - ly) * kk;
   },
 };
 
@@ -1307,7 +1266,6 @@ const code: Scene = {
   id: "code",
   label: "Code",
   caption: "code, most days",
-  place: "band",
   draw(o, w, h) {
     o.save();
     // the code only fills the left of a wide window; wherever the wide one
@@ -1335,11 +1293,11 @@ const code: Scene = {
       o.fill();
     }
     // line numbers
-    for (let r = 0; r < LINES.length; r++) o.fillRect(-97, -35 + r * 9, 5, 3.6);
+    for (let r = 0; r < LINES.length; r++) o.fillRect(-97, -34.2 + r * 9, 5, 2.4);
     TOKENS.forEach((tk, k) => {
       part(o, k + 1);
       o.beginPath();
-      o.roundRect(tk.x, tk.y - 2.3, tk.w, 4.6, 2.3);
+      o.roundRect(tk.x, tk.y - 1.5, tk.w, 3, 1.5);
       o.fill();
     });
     part(o, 30);
@@ -1376,10 +1334,10 @@ const code: Scene = {
 };
 
 /**
- * The portrait as n evenly spaced dots, like a halftone print. A positive:
- * ink where the face is lit and none where it's dark (hair, brows, eyes,
- * beard), with extra ink tracing strong edges (glasses, the beard line) and
- * the head's outline. The dots come from error diffusion rather than random
+ * The portrait as n evenly spaced dots, drawn the way chalk would be: ink
+ * where it's dark (hair, brows, eyes, beard), a light touch on the lit skin,
+ * extra ink tracing strong edges (glasses, the beard line) and the head's
+ * outline. The dots come from error diffusion rather than random
  * picks, so they sit evenly and the features stay crisp instead of noisy.
  * The wall behind is removed by flooding in from the borders, and the
  * shoulders fade out so the picture ends softly under the chin.
@@ -1442,7 +1400,11 @@ function stipple(d: Uint8ClampedArray, W: number, H: number, n: number, top: num
       const edge = Math.min(1, (Math.hypot(gx, gy) / 4) * 3);
       const rim =
         (x >= r3 && wall[p - r3]) || (x < W - r3 && wall[p + r3]) || (y >= r3 && wall[p - r3 * W]) || (y < H - r3 && wall[p + r3 * W]) ? 1 : 0;
-      const v = fade * (smooth(0.25, 0.75, B[p]) ** 1.5 + 0.9 * edge + rim);
+      // drawn like chalk on a blackboard: ink where the photo is dark (hair,
+      // brows, the glasses, the beard), the features traced, a light touch
+      // on the lit skin, and the head's outline. It reads as a drawing of a
+      // face rather than a grainy negative
+      const v =fade * (smooth(0.5, 0.12, B[p]) ** 1.3 + 0.25 * smooth(0.55, 0.85, B[p]) + edge ** 1.3 + 0.9 * rim + 0.03);
       D[p] = v;
       sum += v;
     }
@@ -1496,8 +1458,41 @@ function stipple(d: Uint8ClampedArray, W: number, H: number, n: number, top: num
   return { tx, ty, part: pt, k: 1, dx: 0, dy: 0, rot: false };
 }
 
+/** How much of a w × h box a drawing covers, by the size its fit() picks. */
+const probe = typeof document !== "undefined" ? document.createElement("canvas").getContext("2d") : null;
+function scaleIn(scene: Scene, w: number, h: number, rot: boolean) {
+  if (!probe) return 0;
+  fitArea = 0;
+  probe.save();
+  scene.draw(probe, rot ? h : w, rot ? w : h);
+  probe.restore();
+  return fitArea;
+}
+/**
+ * Every picture is drawn as big as its stage allows: the side-on drawing,
+ * the same drawing a quarter turn round (if it's seen from above), or its
+ * tall drawing, whichever comes out largest.
+ */
+function bestFit(sc: Scene, w: number, h: number): { use: Scene; rot: boolean } {
+  let best = { use: sc, rot: false };
+  if (sc.image) return best;
+  let k = scaleIn(sc, w, h, false);
+  const tries: { use: Scene; rot: boolean }[] = [];
+  if (sc.turn) tries.push({ use: sc, rot: true });
+  if (sc.tall) tries.push({ use: sc.tall, rot: false });
+  for (const t of tries) {
+    const k2 = scaleIn(t.use, w, h, t.rot);
+    // a clear win only, so a near-square stage keeps the usual drawing
+    if (k2 > k * 1.12) {
+      k = k2;
+      best = t;
+    }
+  }
+  return best;
+}
+
 /** Turn a scene into exactly n target points inside the box. */
-function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageElement | null) {
+function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageElement | null, turned = false) {
   const c = document.createElement("canvas");
   c.width = Math.max(2, Math.round(bw));
   c.height = Math.max(2, Math.round(bh));
@@ -1522,10 +1517,9 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
     o.drawImage(img, x0, y0, iw, ih);
     return stipple(o.getImageData(0, 0, c.width, c.height).data, c.width, c.height, n, y0, ih);
   }
-  // a top-down picture in a tall box is drawn a quarter turn round, so it
-  // fills the height instead of shrinking to the width
-  // (for a 2:1 controller or a 3:2 board that wins once the box is square)
-  const rot = !!scene.turn && c.height > c.width;
+  // a top-down picture can be drawn a quarter turn round, when that lets it
+  // fill a tall stage instead of shrinking to the width
+  const rot = turned;
   if (rot) {
     o.translate(c.width / 2, c.height / 2);
     o.rotate(-Math.PI / 2);
@@ -1571,76 +1565,43 @@ function sample(scene: Scene, n: number, bw: number, bh: number, img: HTMLImageE
 }
 
 
-/**
- * Where the picture lives. Rather than fixed percentages, it measures where
- * the name and the intro actually landed on this screen and fills the space
- * they leave: the upper right beside the name on wide screens, everything
- * between the nav and the name when stacked, the right half on a phone held
- * sideways.
- */
-function pictureBox(canvas: HTMLCanvasElement, w: number, h: number) {
-  const navClear = 72;
-  const g = w < 640 ? 16 : w < 768 ? 24 : 40;
-  const cr = canvas.getBoundingClientRect();
-  const hero = canvas.closest("section");
-  const topOf = (sel: string) => {
-    const el = hero?.querySelector<HTMLElement>(sel);
-    return el ? el.getBoundingClientRect().top - cr.top : null;
-  };
-  // landscape below desktop width (a phone on its side, a small laptop or a
-  // tablet held wide): the words take the left half, the picture the right,
-  // top to bottom
-  if (w < 1024 && w > h * 1.15) {
-    const top = h < 520 ? 60 : navClear;
-    const x = w * 0.5;
-    return { x, y: top, w: w - x - g, h: h - top - (h < 520 ? 16 : 28) };
-  }
-  if (w >= 1024 && w > h) {
-    // follow the words' frame, which stops growing past 2200px on ultrawides
-    const fl = Math.max(g, (w - 2200) / 2);
-    const fw = w - fl * 2;
-    const x = fl + fw * 0.42;
-    const bottom = Math.min(h * 0.72, (topOf("[data-hero-side]") ?? h * 0.7) - 28);
-    return { x, y: navClear, w: fl + fw - x, h: Math.max(140, bottom - navClear) };
-  }
-  const bottom = (topOf("[data-hero-name]") ?? h * 0.55) - 20;
-  return { x: g / 2, y: navClear - 8, w: w - g, h: Math.max(140, bottom - navClear + 8) };
-}
-
 type Box = { x: number; y: number; w: number; h: number };
 /**
- * Pictures don't all sit in one spot. On wide screens each has its own place:
- * "side" is the upper right beside the name, "band" is the whole width above
- * the words, "left" is above the name. Narrower screens have one free area,
- * so everything uses it.
+ * The stage: one place for every picture, set by the same grid as the words.
+ * It measures where the words actually landed. When they sit in a column on
+ * the left (any landscape screen) the stage is everything to their right,
+ * from under the nav down to the words' own baseline. When they're stacked
+ * across the bottom (portrait) it's everything between the nav and the name.
  */
-function pictureBoxes(canvas: HTMLCanvasElement, w: number, h: number): Record<"side" | "band" | "left", Box> {
-  const side = pictureBox(canvas, w, h);
-  if (w < 1024 || w <= h * 1.15) return { side, band: side, left: side };
-  const navClear = 72;
-  const fl = Math.max(40, (w - 2200) / 2);
-  const fw = w - fl * 2;
+function pictureBox(canvas: HTMLCanvasElement, w: number, h: number): Box {
+  const short = h < 520;
+  const navClear = short ? 60 : 72;
+  const g = w < 640 ? 16 : w < 768 ? 24 : 40;
+  const foot = short ? 16 : w < 768 ? 24 : 28;
+  const fl = Math.max(g, (w - 2200) / 2);
   const cr = canvas.getBoundingClientRect();
   const hero = canvas.closest("section");
-  const topOf = (sel: string, fb: number) => {
-    const el = hero?.querySelector<HTMLElement>(sel);
-    return el ? el.getBoundingClientRect().top - cr.top : fb;
-  };
-  const nameTop = topOf("[data-hero-name]", h * 0.65);
-  const sideTop = topOf("[data-hero-side]", h * 0.7);
-  const bandBottom = Math.min(nameTop, sideTop) - 24;
-  return {
-    side,
-    band: { x: fl, y: navClear, w: fw, h: Math.max(140, bandBottom - navClear) },
-    left: { x: fl, y: navClear, w: fw * 0.52, h: Math.max(140, nameTop - 24 - navClear) },
-  };
+  const rect = (sel: string) => hero?.querySelector<HTMLElement>(sel)?.getBoundingClientRect() ?? null;
+  const words = rect("[data-hero-words]");
+  if (words && words.width < w * 0.7) {
+    const gap = Math.max(24, (w - fl * 2) * 0.04);
+    const x = words.right - cr.left + gap;
+    return { x, y: navClear, w: Math.max(140, w - fl - x), h: Math.max(140, h - foot - navClear) };
+  }
+  const name = rect("[data-hero-name]");
+  const bottom = (name ? name.top - cr.top : h * 0.55) - 20;
+  // stacked, the pause control sits up under the nav: start below it
+  const top = navClear + 36;
+  return { x: g / 2, y: top, w: w - g, h: Math.max(140, bottom - top) };
 }
 
 export function MorphField({ go }: { go: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null);
-  const ctl = useRef({ paused: false, go: false });
+  const ctl = useRef<{ paused: boolean; go: boolean; jump: number | null }>({ paused: false, go: false, jump: null });
   const [scenes, setScenes] = useState<Scene[]>([]);
-  const [current, setCurrent] = useState(0);
+  // which picture, and when it began, so its line in the list restarts
+  const [cur, setCurrent] = useState({ i: 0, at: 0 });
+  const current = cur.i;
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -1696,7 +1657,6 @@ export function MorphField({ go }: { go: boolean }) {
     let list: Scene[] = [f1, games, dj, board, code, drums];
     let portrait: HTMLImageElement | null = null;
     let box: Box = { x: 0, y: 0, w: 0, h: 0 };
-    let boxes: Record<"side" | "band" | "left", Box> = { side: box, band: box, left: box };
     // between pictures each thread bends through its own random spot on the
     // page, so a hand-off fills the whole hero the way the entrance does
     let scatX = new Float32Array(0);
@@ -1744,9 +1704,8 @@ export function MorphField({ go }: { go: boolean }) {
       canvas!.width = Math.round(w * dpr);
       canvas!.height = Math.round(h * dpr);
       const mobile = w < 768;
-      boxes = pictureBoxes(canvas!, w, h);
-      box = boxes.side;
-      const area = Math.max(...Object.values(boxes).map((b) => b.w * b.h));
+      box = pictureBox(canvas!, w, h);
+      const area = box.w * box.h;
       const shape = Math.min(mobile ? 2600 : 5200, area / (mobile ? 34 : 46));
       const count = Math.round(shape / 0.62);
       if (count !== n) {
@@ -1784,10 +1743,9 @@ export function MorphField({ go }: { go: boolean }) {
       const nameX = nm ? nm.left + nm.width * 0.35 - cr.left : 0;
       const nameY = nm ? nm.top + nm.height * 0.5 - cr.top : h;
       targets = list.map((sc) => {
-        const b = boxes[sc.place ?? "side"];
-        // a side-on picture has a tall drawing of its own for tall boxes
-        const use = sc.tall && b.h > b.w * 0.8 ? sc.tall : sc;
-        const s0 = sample(use, n, b.w, b.h, portrait);
+        const b = box;
+        const { use, rot } = bestFit(sc, b.w, b.h);
+        const s0 = sample(use, n, b.w, b.h, portrait, rot);
         if (!s0) return null;
         const meta: Meta = { cx: 0, cy: 0, rx: 1, ry: 1, yaw: 0, pitch: 0 };
         if (sc.image) {
@@ -1835,11 +1793,12 @@ export function MorphField({ go }: { go: boolean }) {
       // scene clock: form (the entrance, or the morph out of the last
       // picture), hold, and straight on to the next
       let el = now - phaseStart;
-      if (ctl.current.paused || reduce) {
-        el = Math.min(el, FORM + 1);
-        phaseStart = now - el; // hold the clock where it is
-      } else if (el > CYCLE) {
-        sceneIdx = (sceneIdx + 1) % list.length;
+      // a picture picked from the list goes straight there, paused or not
+      const pick = ctl.current.jump;
+      ctl.current.jump = null;
+      const hold = ctl.current.paused || reduce;
+      if (pick != null || (!hold && el > CYCLE)) {
+        sceneIdx = pick != null ? pick % list.length : (sceneIdx + 1) % list.length;
         phaseStart = now;
         el = 0;
         freshGoals = true;
@@ -1866,7 +1825,11 @@ export function MorphField({ go }: { go: boolean }) {
             ctrlY[i] = my + (dx / len) * amp + (scatY[i] - my) * 1.3;
           }
         }
-        setCurrent(sceneIdx);
+        setCurrent({ i: sceneIdx, at: now });
+      }
+      if (hold) {
+        el = Math.min(el, FORM + 1);
+        phaseStart = now - el; // hold the clock where it is
       }
       const tgt = targets[sceneIdx];
       // pull: rises while forming, full while holding
@@ -2173,18 +2136,41 @@ export function MorphField({ go }: { go: boolean }) {
           <p className="sr-only" aria-live="polite">
             Now drawing {scenes[current]?.caption}
           </p>
-          {/* moving content needs a way to stop it (WCAG 2.2.2): this stays
-              out of sight until someone tabs to it */}
+          {/* what the ink draws, in order: the one on screen is marked, its
+              line fills while it holds, and any of them can be picked */}
+          <ul
+            className={s.index}
+            aria-label="What the ink is drawing"
+            data-paused={paused || undefined}
+            style={{ "--cycle": `${CYCLE}ms` } as CSSProperties}
+          >
+            {scenes.map((sc, i) => (
+              <li key={sc.id}>
+                <button
+                  type="button"
+                  key={i === current ? cur.at : undefined}
+                  aria-current={i === current}
+                  onClick={() => {
+                    ctl.current.jump = i;
+                  }}
+                >
+                  {sc.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {/* moving content needs a way to stop it (WCAG 2.2.2) */}
           <button
             type="button"
             className={s.pause}
             aria-pressed={paused}
+            aria-label={paused ? "Play the ink animation" : "Pause the ink animation"}
             onClick={() => {
               ctl.current.paused = !ctl.current.paused;
               setPaused(ctl.current.paused);
             }}
           >
-            {paused ? "Play the ink animation" : "Pause the ink animation"}
+            {paused ? "Play" : "Pause"}
           </button>
         </>
       )}
